@@ -34,10 +34,15 @@ data class VehicleStatus(
     val washerFluidLow: Boolean? = null,
 ) {
     @Serializable
-    data class FuelRange(val range: Distance, val percentage: Double)
+    data class FuelRange(
+        val range: Distance,
+        val percentage: Double,
+    )
 
     @Serializable
-    enum class PlugType(val code: Int) {
+    enum class PlugType(
+        val code: Int,
+    ) {
         @SerialName("unplugged")
         UNPLUGGED(0),
 
@@ -57,11 +62,12 @@ data class VehicleStatus(
              *   on IONIQ 5s plugged into J1772 AC chargers, so it's AC.
              * The DC code is specifically 1; ANY other non-zero value is AC.
              */
-            fun fromBatteryPlugin(value: Int): PlugType = when (value) {
-                0 -> UNPLUGGED
-                1 -> DC_CHARGER
-                else -> AC_CHARGER
-            }
+            fun fromBatteryPlugin(value: Int): PlugType =
+                when (value) {
+                    0 -> UNPLUGGED
+                    1 -> DC_CHARGER
+                    else -> AC_CHARGER
+                }
         }
     }
 
@@ -79,15 +85,19 @@ data class VehicleStatus(
         val chargeTime: Duration get() = chargeTimeSeconds.seconds
 
         val currentTargetSoc: Double?
-            get() = when (plugType) {
-                PlugType.AC_CHARGER -> targetSocAC
-                PlugType.DC_CHARGER -> targetSocDC
-                PlugType.UNPLUGGED -> null
-            }
+            get() =
+                when (plugType) {
+                    PlugType.AC_CHARGER -> targetSocAC
+                    PlugType.DC_CHARGER -> targetSocDC
+                    PlugType.UNPLUGGED -> null
+                }
     }
 
     @Serializable
-    data class Location(val latitude: Double, val longitude: Double) {
+    data class Location(
+        val latitude: Double,
+        val longitude: Double,
+    ) {
         val debug: String get() = "$latitude°, $longitude°"
 
         /**
@@ -109,18 +119,20 @@ data class VehicleStatus(
         UNKNOWN,
         ;
 
-        fun toggled(): LockStatus = when (this) {
-            LOCKED -> UNLOCKED
-            UNLOCKED -> LOCKED
-            UNKNOWN -> UNKNOWN
-        }
+        fun toggled(): LockStatus =
+            when (this) {
+                LOCKED -> UNLOCKED
+                UNLOCKED -> LOCKED
+                UNKNOWN -> UNKNOWN
+            }
 
         companion object {
-            fun fromLocked(locked: Boolean?): LockStatus = when (locked) {
-                null -> UNKNOWN
-                true -> LOCKED
-                false -> UNLOCKED
-            }
+            fun fromLocked(locked: Boolean?): LockStatus =
+                when (locked) {
+                    null -> UNKNOWN
+                    true -> LOCKED
+                    false -> UNLOCKED
+                }
         }
     }
 
@@ -143,12 +155,13 @@ data class VehicleStatus(
 
         val openDoorsDescription: String
             get() {
-                val doors = buildList {
-                    if (frontLeft) add("FL")
-                    if (frontRight) add("FR")
-                    if (backLeft) add("BL")
-                    if (backRight) add("BR")
-                }
+                val doors =
+                    buildList {
+                        if (frontLeft) add("FL")
+                        if (frontRight) add("FR")
+                        if (backLeft) add("BL")
+                        if (backRight) add("BR")
+                    }
                 return if (doors.isEmpty()) "None" else doors.joinToString(", ")
             }
     }
@@ -166,12 +179,13 @@ data class VehicleStatus(
         val warningDescription: String
             get() {
                 if (all) return "All tires"
-                val tires = buildList {
-                    if (frontLeft) add("FL")
-                    if (frontRight) add("FR")
-                    if (rearLeft) add("RL")
-                    if (rearRight) add("RR")
-                }
+                val tires =
+                    buildList {
+                        if (frontLeft) add("FL")
+                        if (frontRight) add("FR")
+                        if (rearLeft) add("RL")
+                        if (rearRight) add("RR")
+                    }
                 return if (tires.isEmpty()) "OK" else tires.joinToString(", ")
             }
     }

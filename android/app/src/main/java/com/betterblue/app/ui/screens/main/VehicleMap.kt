@@ -54,9 +54,10 @@ fun VehicleMap(vehicle: VehicleEntity?, modifier: Modifier = Modifier) {
     }
 
     val position = LatLng(location.latitude, location.longitude)
-    val cameraPositionState = rememberCameraPositionState {
-        this.position = CameraPosition.fromLatLngZoom(position, DEFAULT_ZOOM)
-    }
+    val cameraPositionState =
+        rememberCameraPositionState {
+            this.position = CameraPosition.fromLatLngZoom(position, DEFAULT_ZOOM)
+        }
 
     // Re-center when the selected vehicle (or its position) changes.
     LaunchedEffect(position) {
@@ -94,11 +95,12 @@ private fun NoKeyMapFallback(vehicle: VehicleEntity?, modifier: Modifier = Modif
         modifier = modifier,
         icon = { Icon(Icons.Filled.Map, contentDescription = null) },
         title = location?.debug ?: "Map unavailable",
-        detail = if (BuildConfig.DEBUG) {
-            "Add MAPS_API_KEY to android/local.properties to enable the map."
-        } else {
-            "Map is unavailable in this build."
-        },
+        detail =
+            if (BuildConfig.DEBUG) {
+                "Add MAPS_API_KEY to android/local.properties to enable the map."
+            } else {
+                "Map is unavailable in this build."
+            },
     )
 }
 
@@ -110,9 +112,10 @@ private fun PlaceholderSurface(
     detail: String,
 ) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surfaceVariant),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceVariant),
         contentAlignment = Alignment.Center,
     ) {
         Column(

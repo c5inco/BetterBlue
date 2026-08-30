@@ -33,19 +33,25 @@ enum class SurroundViewCameraPosition {
     ;
 
     val displayName: String
-        get() = when (this) {
-            FRONT -> "Front"
-            REAR -> "Rear"
-            LEFT -> "Left"
-            RIGHT -> "Right"
-            TOP_DOWN -> "Top"
-            COMPOSITE -> "Full"
-        }
+        get() =
+            when (this) {
+                FRONT -> "Front"
+                REAR -> "Rear"
+                LEFT -> "Left"
+                RIGHT -> "Right"
+                TOP_DOWN -> "Top"
+                COMPOSITE -> "Full"
+            }
 }
 
 /** A rectangle inside a JPEG frame, in pixels from the top-left. */
 @Serializable
-data class SurroundViewCrop(val originX: Int, val originY: Int, val width: Int, val height: Int)
+data class SurroundViewCrop(
+    val originX: Int,
+    val originY: Int,
+    val width: Int,
+    val height: Int,
+)
 
 /**
  * One camera view within a capture: which frame it lives in, and where inside
@@ -170,29 +176,32 @@ object SurroundViewDecoder {
         val cameraCount = (totalWidth - topDownWidth) / cameraWidth
         if (cameraCount <= 0) return wholeFrame
 
-        val tiles = (0 until cameraCount).mapTo(mutableListOf()) { index ->
-            SurroundViewTile(
-                position = cameraPosition(index),
-                frameIndex = 0,
-                crop = SurroundViewCrop(
-                    originX = index * cameraWidth,
-                    originY = 0,
-                    width = cameraWidth,
-                    height = minOf(cameraHeight, totalHeight),
-                ),
-            )
-        }
+        val tiles =
+            (0 until cameraCount).mapTo(mutableListOf()) { index ->
+                SurroundViewTile(
+                    position = cameraPosition(index),
+                    frameIndex = 0,
+                    crop =
+                        SurroundViewCrop(
+                            originX = index * cameraWidth,
+                            originY = 0,
+                            width = cameraWidth,
+                            height = minOf(cameraHeight, totalHeight),
+                        ),
+                )
+            }
 
         tiles.add(
             SurroundViewTile(
                 position = SurroundViewCameraPosition.TOP_DOWN,
                 frameIndex = 0,
-                crop = SurroundViewCrop(
-                    originX = cameraCount * cameraWidth,
-                    originY = 0,
-                    width = topDownWidth,
-                    height = minOf(topDownHeight, totalHeight),
-                ),
+                crop =
+                    SurroundViewCrop(
+                        originX = cameraCount * cameraWidth,
+                        originY = 0,
+                        width = topDownWidth,
+                        height = minOf(topDownHeight, totalHeight),
+                    ),
             ),
         )
 
@@ -200,12 +209,13 @@ object SurroundViewDecoder {
     }
 
     private fun cameraPosition(index: Int): SurroundViewCameraPosition {
-        val order = listOf(
-            SurroundViewCameraPosition.FRONT,
-            SurroundViewCameraPosition.REAR,
-            SurroundViewCameraPosition.LEFT,
-            SurroundViewCameraPosition.RIGHT,
-        )
+        val order =
+            listOf(
+                SurroundViewCameraPosition.FRONT,
+                SurroundViewCameraPosition.REAR,
+                SurroundViewCameraPosition.LEFT,
+                SurroundViewCameraPosition.RIGHT,
+            )
         return order.getOrElse(index) { SurroundViewCameraPosition.COMPOSITE }
     }
 

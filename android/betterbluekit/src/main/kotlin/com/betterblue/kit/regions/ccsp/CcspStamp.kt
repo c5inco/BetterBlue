@@ -16,24 +16,25 @@ import java.util.Base64
  * Also sent as `pushRegId` during device registration.
  */
 object CcspStamp {
-
     fun generateStamp(
         appId: String,
         authCfb: String,
         epochSeconds: Long = Instant.now().epochSecond,
     ): String {
         val message = "$appId:$epochSeconds".toByteArray(Charsets.UTF_8)
-        val cfb = try {
-            Base64.getDecoder().decode(authCfb)
-        } catch (_: IllegalArgumentException) {
-            // Mirrors the Swift fallback: unparseable cfb → base64 of the
-            // message alone.
-            return Base64.getEncoder().encodeToString(message)
-        }
+        val cfb =
+            try {
+                Base64.getDecoder().decode(authCfb)
+            } catch (_: IllegalArgumentException) {
+                // Mirrors the Swift fallback: unparseable cfb → base64 of the
+                // message alone.
+                return Base64.getEncoder().encodeToString(message)
+            }
         val count = minOf(cfb.size, message.size)
-        val xored = ByteArray(count) { index ->
-            (cfb[index].toInt() xor message[index].toInt()).toByte()
-        }
+        val xored =
+            ByteArray(count) { index ->
+                (cfb[index].toInt() xor message[index].toInt()).toByte()
+            }
         return Base64.getEncoder().encodeToString(xored)
     }
 }

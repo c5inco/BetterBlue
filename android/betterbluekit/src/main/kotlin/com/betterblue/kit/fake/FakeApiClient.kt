@@ -25,7 +25,6 @@ class FakeApiClient(
     configuration: ApiClientConfig,
     private val vehicleProvider: FakeVehicleProvider,
 ) : ApiClient {
-
     private val username: String = configuration.username
     private val accountId: String = configuration.accountId
 

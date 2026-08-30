@@ -30,157 +30,161 @@ import org.junit.jupiter.api.Test
 
 /** Sample Kia API JSON responses for documentation and testing reference. */
 internal object KiaSampleJson {
-
     /** Sample vehicle status response from Kia USA API. */
-    val vehicleStatus = """
-    {
-      "payload": {
-        "vehicleInfoList": [{
-          "lastVehicleInfo": {
-            "linkStatus" : 0,
-            "vehicleStatusRpt" : {
-              "reportDate" : {
-                "utc" : "20251003012955",
-                "offset" : -7
-              },
-              "vehicleStatus" : {
-                "distanceToEmpty" : {
-                  "value" : 279,
-                  "unit" : 3
-                },
-                "doorLock" : true,
-                "syncDate" : {
-                  "utc" : "20251003012546",
-                  "offset" : -7
-                },
-                "evStatus" : {
-                  "batteryPlugin" : 0,
-                  "batteryStatus" : 76,
-                  "batteryCharge" : false,
-                  "drvDistance" : [
-                    {
-                      "type" : 2,
-                      "rangeByFuel" : {
-                        "evModeRange" : {
-                          "value" : 279,
-                          "unit" : 3
-                        },
-                        "totalAvailableRange" : {
-                          "value" : 279,
-                          "unit" : 3
-                        }
-                      }
-                    }
-                  ],
-                  "targetSOC" : [
-                    {
-                      "targetSOClevel" : 80,
-                      "plugType" : 1
+    val vehicleStatus =
+        """
+        {
+          "payload": {
+            "vehicleInfoList": [{
+              "lastVehicleInfo": {
+                "linkStatus" : 0,
+                "vehicleStatusRpt" : {
+                  "reportDate" : {
+                    "utc" : "20251003012955",
+                    "offset" : -7
+                  },
+                  "vehicleStatus" : {
+                    "distanceToEmpty" : {
+                      "value" : 279,
+                      "unit" : 3
                     },
-                    {
-                      "targetSOClevel" : 80,
-                      "plugType" : 0
+                    "doorLock" : true,
+                    "syncDate" : {
+                      "utc" : "20251003012546",
+                      "offset" : -7
+                    },
+                    "evStatus" : {
+                      "batteryPlugin" : 0,
+                      "batteryStatus" : 76,
+                      "batteryCharge" : false,
+                      "drvDistance" : [
+                        {
+                          "type" : 2,
+                          "rangeByFuel" : {
+                            "evModeRange" : {
+                              "value" : 279,
+                              "unit" : 3
+                            },
+                            "totalAvailableRange" : {
+                              "value" : 279,
+                              "unit" : 3
+                            }
+                          }
+                        }
+                      ],
+                      "targetSOC" : [
+                        {
+                          "targetSOClevel" : 80,
+                          "plugType" : 1
+                        },
+                        {
+                          "targetSOClevel" : 80,
+                          "plugType" : 0
+                        }
+                      ]
+                    },
+                    "climate" : {
+                      "airCtrl" : false,
+                      "airTemp" : {
+                        "value" : "72",
+                        "unit" : 1
+                      },
+                      "heatingAccessory" : {
+                        "steeringWheel" : 0
+                      },
+                      "defrost" : false
                     }
-                  ]
+                  }
                 },
-                "climate" : {
-                  "airCtrl" : false,
-                  "airTemp" : {
-                    "value" : "72",
-                    "unit" : 1
+                "location" : {
+                  "syncDate" : {
+                    "utc" : "20251003012257",
+                    "offset" : -4
                   },
-                  "heatingAccessory" : {
-                    "steeringWheel" : 0
-                  },
-                  "defrost" : false
+                  "coord" : {
+                    "lat" : 38.964186,
+                    "lon" : -84.516544
+                  }
                 }
               }
-            },
-            "location" : {
-              "syncDate" : {
-                "utc" : "20251003012257",
-                "offset" : -4
-              },
-              "coord" : {
-                "lat" : 38.964186,
-                "lon" : -84.516544
-              }
-            }
+            }]
           }
-        }]
-      }
-    }
-    """.trimIndent()
+        }
+        """.trimIndent()
 
     /** Sample login response requiring MFA. */
-    val mfaRequired = """
-    {
-      "payload": {
-        "otpKey": "abc123otpkey",
-        "hasEmail": true,
-        "hasPhone": true,
-        "email": "t***@example.com",
-        "phone": "***-***-1234",
-        "rmTokenExpired": false
-      }
-    }
-    """.trimIndent()
+    val mfaRequired =
+        """
+        {
+          "payload": {
+            "otpKey": "abc123otpkey",
+            "hasEmail": true,
+            "hasPhone": true,
+            "email": "t***@example.com",
+            "phone": "***-***-1234",
+            "rmTokenExpired": false
+          }
+        }
+        """.trimIndent()
 
     /** Sample vehicles list response. */
-    val vehiclesList = """
-    {
-      "payload": {
-        "vehicleSummary": [
-          {
-            "vin": "KNDJ23AU1N7000000",
-            "vehicleIdentifier": "REG123456",
-            "nickName": "My EV6",
-            "vehicleKey": "key123abc",
-            "genType": "4",
-            "fuelType": 1,
-            "mileage": 25000
+    val vehiclesList =
+        """
+        {
+          "payload": {
+            "vehicleSummary": [
+              {
+                "vin": "KNDJ23AU1N7000000",
+                "vehicleIdentifier": "REG123456",
+                "nickName": "My EV6",
+                "vehicleKey": "key123abc",
+                "genType": "4",
+                "fuelType": 1,
+                "mileage": 25000
+              }
+            ]
           }
-        ]
-      }
-    }
-    """.trimIndent()
+        }
+        """.trimIndent()
 
     /** Sample error response. */
-    val errorResponse = """
-    {
-      "status": {
-        "statusCode": 1,
-        "errorCode": 1003,
-        "errorType": 1,
-        "errorMessage": "Session Key is invalid or expired"
-      }
-    }
-    """.trimIndent()
+    val errorResponse =
+        """
+        {
+          "status": {
+            "statusCode": 1,
+            "errorCode": 1003,
+            "errorType": 1,
+            "errorMessage": "Session Key is invalid or expired"
+          }
+        }
+        """.trimIndent()
 }
 
 class KiaUsaClientTest {
+    private fun makeKiaUsClient() =
+        KiaUsaClient(
+            ApiClientConfig(
+                region = Region.USA,
+                brand = Brand.KIA,
+                username = "test@example.com",
+                password = "password123",
+                pin = "0000",
+                accountId = "00000000-0000-0000-0000-000000000001",
+            ),
+        )
 
-    private fun makeKiaUsClient() = KiaUsaClient(
-        ApiClientConfig(
-            region = Region.USA,
-            brand = Brand.KIA,
-            username = "test@example.com",
-            password = "password123",
-            pin = "0000",
-            accountId = "00000000-0000-0000-0000-000000000001",
-        ),
-    )
-
-    private fun makeVehicle() = Vehicle(
-        vin = "KNDC3DLC5N0000000",
-        regId = "REG",
-        model = "EV6",
-        accountId = "00000000-0000-0000-0000-000000000002",
-        fuelType = FuelType.ELECTRIC,
-        generation = 3,
-        odometer = Distance(1000.0, Distance.Units.MILES),
-        vehicleKey = "vk",
-    )
+    private fun makeVehicle() =
+        Vehicle(
+            vin = "KNDC3DLC5N0000000",
+            regId = "REG",
+            model = "EV6",
+            accountId = "00000000-0000-0000-0000-000000000002",
+            fuelType = FuelType.ELECTRIC,
+            generation = 3,
+            odometer = Distance(1000.0, Distance.Units.MILES),
+            vehicleKey = "vk",
+        )
 
     @Test
     fun `KiaUsaClient initialization`() {
@@ -255,7 +259,6 @@ class KiaUsaClientTest {
 // JSON format documentation tests
 
 class KiaJsonFormatTest {
-
     @Test
     fun `vehicle status JSON is valid`() {
         val json = ApiClientBase.parseJsonObject(KiaSampleJson.vehicleStatus.toByteArray())
@@ -284,7 +287,14 @@ class KiaJsonFormatTest {
 
         val vehicles = json["payload"].asObjectOrNull()?.get("vehicleSummary") as? JsonArray
         assertEquals(1, vehicles?.size)
-        assertEquals("KNDJ23AU1N7000000", vehicles?.firstOrNull().asObjectOrNull()?.get("vin").asStringOrNull())
+        assertEquals(
+            "KNDJ23AU1N7000000",
+            vehicles
+                ?.firstOrNull()
+                .asObjectOrNull()
+                ?.get("vin")
+                .asStringOrNull(),
+        )
     }
 
     @Test

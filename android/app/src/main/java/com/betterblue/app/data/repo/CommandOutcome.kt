@@ -12,6 +12,10 @@ import com.betterblue.kit.ApiException
  */
 sealed interface CommandOutcome {
     data object Confirmed : CommandOutcome
+
     data object AwaitingConfirmation : CommandOutcome
-    data class Failed(val error: ApiException) : CommandOutcome
+
+    data class Failed(
+        val error: ApiException,
+    ) : CommandOutcome
 }

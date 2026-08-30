@@ -1,13 +1,17 @@
 package com.betterblue.kit.log
 
-enum class BBLogLevel(val emoji: String) {
+enum class BBLogLevel(
+    val emoji: String,
+) {
     DEBUG("🔍"),
     INFO("ℹ️"),
     WARNING("⚠️"),
     ERROR("❌"),
 }
 
-enum class BBLogCategory(val label: String) {
+enum class BBLogCategory(
+    val label: String,
+) {
     API("API"),
     AUTH("Auth"),
     MFA("MFA"),
@@ -31,12 +35,16 @@ fun interface BBLogSink {
  */
 object BBLogger {
     @Volatile
-    var sink: BBLogSink = BBLogSink { level, category, message ->
-        println("${level.emoji} [${category.label}] $message")
-    }
+    var sink: BBLogSink =
+        BBLogSink { level, category, message ->
+            println("${level.emoji} [${category.label}] $message")
+        }
 
     fun debug(category: BBLogCategory, message: String) = sink.log(BBLogLevel.DEBUG, category, message)
+
     fun info(category: BBLogCategory, message: String) = sink.log(BBLogLevel.INFO, category, message)
+
     fun warning(category: BBLogCategory, message: String) = sink.log(BBLogLevel.WARNING, category, message)
+
     fun error(category: BBLogCategory, message: String) = sink.log(BBLogLevel.ERROR, category, message)
 }

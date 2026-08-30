@@ -43,11 +43,12 @@ fun ErrorBox(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(color.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
-            .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(color.copy(alpha = 0.1f), RoundedCornerShape(12.dp))
+                .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.Top,
     ) {
@@ -75,11 +76,12 @@ fun ErrorDetailsCard(error: ActionError, modifier: Modifier = Modifier) {
     val color = MaterialTheme.colorScheme.error
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .background(color.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-            .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-            .padding(16.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .background(color.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
+                .border(1.dp, color.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
+                .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Text(error.headline, style = MaterialTheme.typography.titleSmall, color = color)
@@ -106,9 +108,10 @@ fun ErrorDetailsCard(error: ActionError, modifier: Modifier = Modifier) {
 @Composable
 fun LoadingOverlay(message: String, modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f)),
+        modifier =
+            modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.35f)),
         contentAlignment = Alignment.Center,
     ) {
         Surface(shape = RoundedCornerShape(16.dp), tonalElevation = 6.dp) {

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Test
 import kotlin.math.abs
 
 class MeasurementsTest {
-
     // Distance
 
     @Test

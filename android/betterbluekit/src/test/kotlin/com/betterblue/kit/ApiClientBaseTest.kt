@@ -18,28 +18,31 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertDoesNotThrow
 import org.junit.jupiter.api.assertThrows
 
-private class TestClient(config: ApiClientConfig) : ApiClientBase(config) {
+private class TestClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config) {
     override val apiName: String get() = "TestClient"
 }
 
-private fun testConfig() = ApiClientConfig(
-    region = Region.USA,
-    brand = Brand.HYUNDAI,
-    username = "user@example.com",
-    password = "password",
-    pin = "1234",
-    accountId = "00000000-0000-0000-0000-000000000001",
-)
+private fun testConfig() =
+    ApiClientConfig(
+        region = Region.USA,
+        brand = Brand.HYUNDAI,
+        username = "user@example.com",
+        password = "password",
+        pin = "1234",
+        accountId = "00000000-0000-0000-0000-000000000001",
+    )
 
-private fun result(code: Int, body: String = "{}") = HttpResult(
-    body = body.toByteArray(),
-    code = code,
-    headers = Headers.headersOf(),
-    finalUrl = "https://example.com",
-)
+private fun result(code: Int, body: String = "{}") =
+    HttpResult(
+        body = body.toByteArray(),
+        code = code,
+        headers = Headers.headersOf(),
+        finalUrl = "https://example.com",
+    )
 
 class ApiClientBaseTest {
-
     private val client = TestClient(testConfig())
 
     // HTTP status validation
@@ -150,14 +153,15 @@ class ApiClientBaseTest {
 
     @Test
     fun `requiresMfa packs the challenge into userInfo`() {
-        val e = ApiException.requiresMfa(
-            xid = "xid-1",
-            otpKey = "otp-1",
-            hasEmail = true,
-            hasPhone = false,
-            email = "j***@***.com",
-            rmTokenExpired = true,
-        )
+        val e =
+            ApiException.requiresMfa(
+                xid = "xid-1",
+                otpKey = "otp-1",
+                hasEmail = true,
+                hasPhone = false,
+                email = "j***@***.com",
+                rmTokenExpired = true,
+            )
         assertEquals(ApiErrorType.REQUIRES_MFA, e.errorType)
         assertEquals("xid-1", e.userInfo?.get("xid"))
         assertEquals("otp-1", e.userInfo?.get("otpKey"))
@@ -172,9 +176,10 @@ class ApiClientBaseTest {
 
     @Test
     fun `atPath walks objects and array indices`() {
-        val json = Json.parseToJsonElement(
-            """{"a":{"b":[{"c":42},{"c":43}]}}""",
-        )
+        val json =
+            Json.parseToJsonElement(
+                """{"a":{"b":[{"c":42},{"c":43}]}}""",
+            )
         assertEquals(42.0, json.atPath("a.b.0.c").asDoubleOrNull())
         assertEquals(43.0, json.atPath("a.b.1.c").asDoubleOrNull())
         assertNull(json.atPath("a.b.2.c"))
@@ -200,9 +205,11 @@ class ApiClientBaseTest {
 
     @Test
     fun `boolean spellings coerce through asBooleanOrNull`() {
-        val json = Json.parseToJsonElement(
-            """{"a":true,"b":"true","c":1,"d":"Y","e":"off","f":"maybe"}""",
-        ).jsonObject
+        val json =
+            Json
+                .parseToJsonElement(
+                    """{"a":true,"b":"true","c":1,"d":"Y","e":"off","f":"maybe"}""",
+                ).jsonObject
         assertEquals(true, json["a"].asBooleanOrNull())
         assertEquals(true, json["b"].asBooleanOrNull())
         assertEquals(true, json["c"].asBooleanOrNull())

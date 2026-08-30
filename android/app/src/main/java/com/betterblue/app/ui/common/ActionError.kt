@@ -25,16 +25,23 @@ data class ActionError(
         get() = apiException?.errorType == ApiErrorType.STATUS_VERIFICATION_TIMEOUT
 
     val technicalDetails: String
-        get() = buildString {
-            appendLine("Action: $action")
-            appendLine("Message: ${error.message}")
-            apiException?.let { api ->
-                appendLine("Type: ${api.errorType}")
-                api.code?.let { appendLine("Code: $it") }
-                api.apiName?.let { appendLine("API: $it") }
-                api.userInfo?.let { appendLine("Info: $it") }
+        get() =
+            buildString {
+                appendLine("Action: $action")
+                appendLine("Message: ${error.message}")
+                apiException?.let { api ->
+                    appendLine("Type: ${api.errorType}")
+                    api.code?.let { appendLine("Code: $it") }
+                    api.apiName?.let { appendLine("API: $it") }
+                    api.userInfo?.let { appendLine("Info: $it") }
+                }
+                accountId?.let { appendLine("Account: $it") }
+                append(
+                    error
+                        .stackTraceToString()
+                        .lineSequence()
+                        .take(10)
+                        .joinToString("\n"),
+                )
             }
-            accountId?.let { appendLine("Account: $it") }
-            append(error.stackTraceToString().lineSequence().take(10).joinToString("\n"))
-        }
 }

@@ -7,7 +7,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SensitiveDataRedactorTest {
-
     @Test
     fun `redacts passwords pins and otp codes`() {
         val input = """{"password":"hunter2","pin":"1234","otpNo":"987654"}"""
@@ -95,13 +94,14 @@ class SensitiveDataRedactorTest {
 
     @Test
     fun `redacts sensitive headers`() {
-        val headers = mapOf(
-            "Authorization" to "Bearer secret-token",
-            "Cookie" to "__cf_bm=abc",
-            "clientSecret" to "s3cret",
-            "Accesstoken" to "tok",
-            "Content-Type" to "application/json",
-        )
+        val headers =
+            mapOf(
+                "Authorization" to "Bearer secret-token",
+                "Cookie" to "__cf_bm=abc",
+                "clientSecret" to "s3cret",
+                "Accesstoken" to "tok",
+                "Content-Type" to "application/json",
+            )
         val redacted = SensitiveDataRedactor.redactHeaders(headers)
         assertEquals("Bearer [REDACTED]", redacted["Authorization"])
         assertEquals("[REDACTED]", redacted["Cookie"])
@@ -138,7 +138,7 @@ class SensitiveDataRedactorTest {
     @Test
     fun `unterminated string copies remainder verbatim`() {
         val big = "B".repeat(5000)
-        val input = """{"a":"$big"""" .dropLast(1) // remove closing quote
+        val input = """{"a":"$big"""".dropLast(1) // remove closing quote
         val elided = SensitiveDataRedactor.elideOversizedValues(input)!!
         assertTrue(elided.startsWith("""{"a":""""))
     }

@@ -37,7 +37,6 @@ data class VehicleEntity(
     val odometer: Distance,
     val vehicleKey: String? = null,
     val marketOptions: VehicleMarketOptions? = null,
-
     // Latest status (all nullable — may never have been fetched)
     val lastUpdated: Long? = null,
     val syncDate: Long? = null,
@@ -57,7 +56,6 @@ data class VehicleEntity(
      * an ICE car, high-voltage system live in an EV.
      */
     val accessoryOn: Boolean? = null,
-
     // UI preferences
     val customName: String? = null,
     val isHidden: Boolean = false,
@@ -71,7 +69,6 @@ data class VehicleEntity(
     val showClimateDurationOverride: Boolean? = null,
     /** User override pinning the powertrain; null = trust the inferred value. */
     val fuelTypeOverrideRaw: String? = null,
-
     // Per-vehicle accent colors (palette names; null = per-slot default)
     val primaryColorName: String? = null,
     val chargingColorName: String? = null,
@@ -80,7 +77,6 @@ data class VehicleEntity(
     val unlockColorName: String? = null,
     val startClimateColorName: String? = null,
     val stopColorName: String? = null,
-
     /** JSON-encoded DebugConfiguration for fake vehicles; null otherwise. */
     val debugConfigJson: String? = null,
 )

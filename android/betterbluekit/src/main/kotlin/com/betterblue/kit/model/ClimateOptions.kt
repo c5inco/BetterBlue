@@ -24,20 +24,22 @@ data class ClimateOptions(
      * 0 = neither, 2 = rear defrost only, 3 = steering wheel only, 4 = both.
      */
     val heatValue: Int
-        get() = when {
-            !rearDefrost && steeringWheel == 0 -> 0
-            rearDefrost && steeringWheel != 0 -> 4
-            rearDefrost -> 2
-            steeringWheel != 0 -> 3
-            else -> 0
-        }
+        get() =
+            when {
+                !rearDefrost && steeringWheel == 0 -> 0
+                rearDefrost && steeringWheel != 0 -> 4
+                rearDefrost -> 2
+                steeringWheel != 0 -> 3
+                else -> 0
+            }
 
-    fun getSeatHeaterVentInfo(): Map<String, Int> = mapOf(
-        "drvSeatHeatState" to convertSeatSetting(frontLeftSeat, frontLeftVentilation),
-        "astSeatHeatState" to convertSeatSetting(frontRightSeat, frontRightVentilation),
-        "rlSeatHeatState" to convertSeatSetting(rearLeftSeat, rearLeftVentilation),
-        "rrSeatHeatState" to convertSeatSetting(rearRightSeat, rearRightVentilation),
-    )
+    fun getSeatHeaterVentInfo(): Map<String, Int> =
+        mapOf(
+            "drvSeatHeatState" to convertSeatSetting(frontLeftSeat, frontLeftVentilation),
+            "astSeatHeatState" to convertSeatSetting(frontRightSeat, frontRightVentilation),
+            "rlSeatHeatState" to convertSeatSetting(rearLeftSeat, rearLeftVentilation),
+            "rrSeatHeatState" to convertSeatSetting(rearRightSeat, rearRightVentilation),
+        )
 
     companion object {
         /**
@@ -45,10 +47,16 @@ data class ClimateOptions(
          * midpoint of the HVAC range in the caller's preferred unit — 72°F or
          * 22°C — so a new preset doesn't start on an off-grid converted value.
          */
-        fun forPreferredUnits(preferredUnits: Temperature.Units): ClimateOptions = when (preferredUnits) {
-            Temperature.Units.FAHRENHEIT -> ClimateOptions(temperature = Temperature(Temperature.Units.FAHRENHEIT, 72.0))
-            Temperature.Units.CELSIUS -> ClimateOptions(temperature = Temperature(Temperature.Units.CELSIUS, 22.0))
-        }
+        fun forPreferredUnits(preferredUnits: Temperature.Units): ClimateOptions =
+            when (preferredUnits) {
+                Temperature.Units.FAHRENHEIT -> {
+                    ClimateOptions(temperature = Temperature(Temperature.Units.FAHRENHEIT, 72.0))
+                }
+
+                Temperature.Units.CELSIUS -> {
+                    ClimateOptions(temperature = Temperature(Temperature.Units.CELSIUS, 22.0))
+                }
+            }
     }
 }
 
@@ -57,8 +65,9 @@ data class ClimateOptions(
  * (from egmp-bluelink-scriptable): 0 stays 0; cooling 1→3, 2→4, 3→5;
  * heat 1→6, 2→7, 3→8.
  */
-internal fun convertSeatSetting(value: Int, cooling: Boolean): Int = when {
-    value == 0 -> 0
-    cooling -> value + 2
-    else -> value + 5
-}
+internal fun convertSeatSetting(value: Int, cooling: Boolean): Int =
+    when {
+        value == 0 -> 0
+        cooling -> value + 2
+        else -> value + 5
+    }

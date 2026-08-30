@@ -35,15 +35,25 @@ class CachedApiClient(
     private val ttlMillis: Long = 5_000,
     private val clock: () -> Long = System::currentTimeMillis,
 ) : ApiClient {
-
     private sealed interface Key {
         data object Login : Key
+
         data object FetchVehicles : Key
-        data class FetchStatus(val vin: String) : Key
-        data class Command(val vin: String, val command: String) : Key
+
+        data class FetchStatus(
+            val vin: String,
+        ) : Key
+
+        data class Command(
+            val vin: String,
+            val command: String,
+        ) : Key
     }
 
-    private class CacheEntry(val response: Any, val timestamp: Long)
+    private class CacheEntry(
+        val response: Any,
+        val timestamp: Long,
+    )
 
     private val mutex = Mutex()
     private val cache = mutableMapOf<Key, CacheEntry>()
@@ -55,36 +65,38 @@ class CachedApiClient(
         invalidateFirst: Boolean = false,
         fetch: suspend () -> T,
     ): T {
-        val toAwait: Deferred<Any?> = mutex.withLock {
-            if (invalidateFirst) cache.remove(key)
+        val toAwait: Deferred<Any?> =
+            mutex.withLock {
+                if (invalidateFirst) cache.remove(key)
 
-            if (useCache) {
-                val entry = cache[key]
-                if (entry != null && clock() - entry.timestamp < ttlMillis) {
-                    BBLogger.debug(BBLogCategory.API, "CachedApiClient: using cached response for $key")
-                    @Suppress("UNCHECKED_CAST")
-                    return entry.response as T
-                }
-            }
-
-            ongoing[key]?.let {
-                BBLogger.debug(BBLogCategory.API, "CachedApiClient: joining in-flight request for $key")
-                it
-            } ?: run {
-                BBLogger.debug(BBLogCategory.API, "CachedApiClient: performing new request for $key")
-                val deferred: Deferred<Any?> = scope.async {
-                    try {
-                        val result = fetch()
-                        mutex.withLock { cache[key] = CacheEntry(result, clock()) }
-                        result
-                    } finally {
-                        mutex.withLock { ongoing.remove(key) }
+                if (useCache) {
+                    val entry = cache[key]
+                    if (entry != null && clock() - entry.timestamp < ttlMillis) {
+                        BBLogger.debug(BBLogCategory.API, "CachedApiClient: using cached response for $key")
+                        @Suppress("UNCHECKED_CAST")
+                        return entry.response as T
                     }
                 }
-                ongoing[key] = deferred
-                deferred
+
+                ongoing[key]?.let {
+                    BBLogger.debug(BBLogCategory.API, "CachedApiClient: joining in-flight request for $key")
+                    it
+                } ?: run {
+                    BBLogger.debug(BBLogCategory.API, "CachedApiClient: performing new request for $key")
+                    val deferred: Deferred<Any?> =
+                        scope.async {
+                            try {
+                                val result = fetch()
+                                mutex.withLock { cache[key] = CacheEntry(result, clock()) }
+                                result
+                            } finally {
+                                mutex.withLock { ongoing.remove(key) }
+                            }
+                        }
+                    ongoing[key] = deferred
+                    deferred
+                }
             }
-        }
 
         @Suppress("UNCHECKED_CAST")
         return toAwait.await() as T
@@ -100,37 +112,40 @@ class CachedApiClient(
         vehicle: Vehicle,
         authToken: AuthToken,
         cached: Boolean,
-    ): VehicleStatus = cachedOrJoin(
-        Key.FetchStatus(vehicle.vin),
-        useCache = cached,
-        // A real-time request also invalidates any stale entry so later
-        // callers see fresh data.
-        invalidateFirst = !cached,
-    ) { underlyingClient.fetchVehicleStatus(vehicle, authToken, cached) }
+    ): VehicleStatus =
+        cachedOrJoin(
+            Key.FetchStatus(vehicle.vin),
+            useCache = cached,
+            // A real-time request also invalidates any stale entry so later
+            // callers see fresh data.
+            invalidateFirst = !cached,
+        ) { underlyingClient.fetchVehicleStatus(vehicle, authToken, cached) }
 
     override suspend fun sendCommand(vehicle: Vehicle, command: VehicleCommand, authToken: AuthToken) {
         val key = Key.Command(vehicle.vin, command.toString())
 
-        val toAwait: Deferred<Any?> = mutex.withLock {
-            ongoing[key]?.let {
-                BBLogger.debug(BBLogCategory.API, "CachedApiClient: joining in-flight command for ${vehicle.vin}")
-                it
-            } ?: run {
-                // Invalidate cached status before sending so subsequent
-                // fetches reflect the command's effect.
-                cache.remove(Key.FetchStatus(vehicle.vin))
-                val deferred: Deferred<Any?> = scope.async {
-                    try {
-                        underlyingClient.sendCommand(vehicle, command, authToken)
-                        null
-                    } finally {
-                        mutex.withLock { ongoing.remove(key) }
-                    }
+        val toAwait: Deferred<Any?> =
+            mutex.withLock {
+                ongoing[key]?.let {
+                    BBLogger.debug(BBLogCategory.API, "CachedApiClient: joining in-flight command for ${vehicle.vin}")
+                    it
+                } ?: run {
+                    // Invalidate cached status before sending so subsequent
+                    // fetches reflect the command's effect.
+                    cache.remove(Key.FetchStatus(vehicle.vin))
+                    val deferred: Deferred<Any?> =
+                        scope.async {
+                            try {
+                                underlyingClient.sendCommand(vehicle, command, authToken)
+                                null
+                            } finally {
+                                mutex.withLock { ongoing.remove(key) }
+                            }
+                        }
+                    ongoing[key] = deferred
+                    deferred
                 }
-                ongoing[key] = deferred
-                deferred
             }
-        }
         toAwait.await()
     }
 

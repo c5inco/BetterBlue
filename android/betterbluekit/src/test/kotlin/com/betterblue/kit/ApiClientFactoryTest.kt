@@ -14,15 +14,15 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
 class ApiClientFactoryTest {
-
-    private fun config(brand: Brand, region: Region) = ApiClientConfig(
-        region = region,
-        brand = brand,
-        username = "test@example.com",
-        password = "password123",
-        pin = "0000",
-        accountId = "00000000-0000-0000-0000-000000000001",
-    )
+    private fun config(brand: Brand, region: Region) =
+        ApiClientConfig(
+            region = region,
+            brand = brand,
+            username = "test@example.com",
+            password = "password123",
+            pin = "0000",
+            accountId = "00000000-0000-0000-0000-000000000001",
+        )
 
     @Test
     fun `supported brand-region pairs build their client`() {
@@ -35,17 +35,19 @@ class ApiClientFactoryTest {
 
     @Test
     fun `unsupported regions throw regionNotSupported`() {
-        val unsupported = listOf(
-            Brand.KIA to Region.CANADA,
-            Brand.HYUNDAI to Region.AUSTRALIA,
-            Brand.KIA to Region.AUSTRALIA,
-            Brand.HYUNDAI to Region.CHINA,
-            Brand.KIA to Region.INDIA,
-        )
+        val unsupported =
+            listOf(
+                Brand.KIA to Region.CANADA,
+                Brand.HYUNDAI to Region.AUSTRALIA,
+                Brand.KIA to Region.AUSTRALIA,
+                Brand.HYUNDAI to Region.CHINA,
+                Brand.KIA to Region.INDIA,
+            )
         for ((brand, region) in unsupported) {
-            val e = assertThrows<ApiException>("$brand in $region") {
-                createBetterBlueKitApiClient(config(brand, region))
-            }
+            val e =
+                assertThrows<ApiException>("$brand in $region") {
+                    createBetterBlueKitApiClient(config(brand, region))
+                }
             assertEquals(ApiErrorType.REGION_NOT_SUPPORTED, e.errorType, "$brand in $region")
         }
     }

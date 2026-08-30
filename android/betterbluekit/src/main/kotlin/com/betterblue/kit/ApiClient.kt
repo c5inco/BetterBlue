@@ -37,16 +37,18 @@ enum class HyundaiCanadaVariant {
     ;
 
     val displayName: String
-        get() = when (this) {
-            WEB_PORTAL -> "Web Portal"
-            NATIVE_APP -> "Native App"
-        }
+        get() =
+            when (this) {
+                WEB_PORTAL -> "Web Portal"
+                NATIVE_APP -> "Native App"
+            }
 
     val summary: String
-        get() = when (this) {
-            WEB_PORTAL -> "Browser-style login (recommended). Best for clearing Cloudflare."
-            NATIVE_APP -> "MyHyundai app-style login. Try this if Web Portal won't connect."
-        }
+        get() =
+            when (this) {
+                WEB_PORTAL -> "Browser-style login (recommended). Best for clearing Cloudflare."
+                NATIVE_APP -> "MyHyundai app-style login. Try this if Web Portal won't connect."
+            }
 
     companion object {
         val DEFAULT = WEB_PORTAL
@@ -99,7 +101,10 @@ enum class OptionalApiFeature {
     SURROUND_VIEW,
 }
 
-data class MfaVerification(val rememberMeToken: String, val sid: String)
+data class MfaVerification(
+    val rememberMeToken: String,
+    val sid: String,
+)
 
 /** Client for communicating with a Hyundai/Kia region backend. */
 interface ApiClient {
@@ -175,10 +180,11 @@ fun ApiClient.supportsMfa(): Boolean = optionalFeaturesSupported().contains(Opti
 fun ApiClient.supportsSurroundView(): Boolean =
     optionalFeaturesSupported().contains(OptionalApiFeature.SURROUND_VIEW)
 
-fun ApiClient.supportedEvTripTypes(): List<EVTripType> = buildList {
-    val features = optionalFeaturesSupported()
-    if (features.contains(OptionalApiFeature.EV_TRIP_SUMMARY)) add(EVTripType.SUMMARY)
-    if (features.contains(OptionalApiFeature.EV_TRIP_INFO)) add(EVTripType.INFO)
-}
+fun ApiClient.supportedEvTripTypes(): List<EVTripType> =
+    buildList {
+        val features = optionalFeaturesSupported()
+        if (features.contains(OptionalApiFeature.EV_TRIP_SUMMARY)) add(EVTripType.SUMMARY)
+        if (features.contains(OptionalApiFeature.EV_TRIP_INFO)) add(EVTripType.INFO)
+    }
 
 enum class HttpMethod { GET, POST, PUT, DELETE }

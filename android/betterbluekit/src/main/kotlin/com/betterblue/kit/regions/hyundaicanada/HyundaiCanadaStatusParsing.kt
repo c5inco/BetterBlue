@@ -101,8 +101,9 @@ internal fun HyundaiCanadaClient.parseCanadaGasRange(
     // `distanceToEmpty` spelling is kept as a fallback in case some firmware
     // still uses it. Reading only the latter meant gas vehicles never showed a
     // range even though the value was right there in the payload (BetterBlue#98).
-    val distanceToEmpty = (statusData["dte"] as? JsonObject)
-        ?: (statusData["distanceToEmpty"] as? JsonObject)
+    val distanceToEmpty =
+        (statusData["dte"] as? JsonObject)
+            ?: (statusData["distanceToEmpty"] as? JsonObject)
     if (distanceToEmpty != null) {
         distanceToEmpty["value"].asDoubleOrNull()?.let { value ->
             return VehicleStatus.FuelRange(
@@ -131,8 +132,9 @@ internal fun HyundaiCanadaClient.parseCanadaGasRange(
 
 internal fun parseCanadaLocation(statusData: JsonObject): VehicleStatus.Location {
     val vehicleLocation = statusData["vehicleLocation"] as? JsonObject
-    val coord = (vehicleLocation?.get("coord") as? JsonObject)
-        ?: (statusData["coord"] as? JsonObject)
+    val coord =
+        (vehicleLocation?.get("coord") as? JsonObject)
+            ?: (statusData["coord"] as? JsonObject)
 
     return VehicleStatus.Location(
         latitude = coord?.get("lat").asDoubleOrNull() ?: 0.0,
@@ -145,14 +147,16 @@ internal fun parseCanadaClimateStatus(statusData: JsonObject): VehicleStatus.Cli
 
     return VehicleStatus.ClimateStatus(
         defrostOn = statusData["defrost"].asJsonBooleanOrNull() ?: false,
-        airControlOn = statusData["airCtrlOn"].asJsonBooleanOrNull()
-            ?: statusData["airCtrl"].asJsonBooleanOrNull()
-            ?: false,
+        airControlOn =
+            statusData["airCtrlOn"].asJsonBooleanOrNull()
+                ?: statusData["airCtrl"].asJsonBooleanOrNull()
+                ?: false,
         steeringWheelHeatingOn = (statusData["steerWheelHeat"].asIntOrNull() ?: 0) != 0,
-        temperature = parseCanadaAirTemp(
-            airTempBlock = airTemp,
-            airTempUnitTopLevel = statusData["airTempUnit"].asStringOrNull(),
-        ),
+        temperature =
+            parseCanadaAirTemp(
+                airTempBlock = airTemp,
+                airTempUnitTopLevel = statusData["airTempUnit"].asStringOrNull(),
+            ),
     )
 }
 
@@ -179,11 +183,12 @@ private fun parseCanadaAirTemp(airTempBlock: JsonObject, airTempUnitTopLevel: St
     // The nested `unit` field is an index into that unit's scale, *not* the
     // unit itself — many Gen3 payloads ship `unit: 0` regardless of whether
     // the top-level says "C" or "F".
-    val units = when (airTempUnitTopLevel?.uppercase()) {
-        "F" -> Temperature.Units.FAHRENHEIT
-        "C" -> Temperature.Units.CELSIUS
-        else -> Temperature.Units.fromInt(unitField)
-    }
+    val units =
+        when (airTempUnitTopLevel?.uppercase()) {
+            "F" -> Temperature.Units.FAHRENHEIT
+            "C" -> Temperature.Units.CELSIUS
+            else -> Temperature.Units.fromInt(unitField)
+        }
 
     // HI / LOW map to the HVAC range bounds, which Temperature.MAXIMUM/MINIMUM
     // define in Fahrenheit (62..82). The Temperature constructor does NOT
@@ -232,9 +237,10 @@ internal fun parseCanadaBattery12V(statusData: JsonObject): Int? {
 }
 
 internal fun parseCanadaDoorStatus(statusData: JsonObject): VehicleStatus.DoorStatus? {
-    val doorData = statusData["doorOpen"] as? JsonObject
-        ?: statusData["doorStatus"] as? JsonObject
-        ?: JsonObject(emptyMap())
+    val doorData =
+        statusData["doorOpen"] as? JsonObject
+            ?: statusData["doorStatus"] as? JsonObject
+            ?: JsonObject(emptyMap())
 
     if (doorData.isEmpty()) return null
 
@@ -311,9 +317,10 @@ private fun parseChargeTimeMinutes(evStatusData: JsonObject): Int {
 
 private fun parseTargetSocs(evStatusData: JsonObject): Pair<Double?, Double?> {
     val reserveChargeInfos = evStatusData["reservChargeInfos"] as? JsonObject
-    val targetSocList = (reserveChargeInfos?.get("targetSOClist") as? JsonArray)
-        ?: (evStatusData["targetSOC"] as? JsonArray)
-        ?: JsonArray(emptyList())
+    val targetSocList =
+        (reserveChargeInfos?.get("targetSOClist") as? JsonArray)
+            ?: (evStatusData["targetSOC"] as? JsonArray)
+            ?: JsonArray(emptyList())
 
     var targetSocAC: Double? = null
     var targetSocDC: Double? = null

@@ -69,20 +69,23 @@ internal suspend fun HyundaiCanadaClient.beginMfaFlow(cookie: String): Nothing {
 
     val loginMfaHeaders = headers() + ("Cookie" to cookie)
 
-    val (_, response) = performJsonRequest(
-        url = "$apiBaseUrl/mfa/selverifmeth",
-        method = HttpMethod.POST,
-        headers = loginMfaHeaders,
-        body = buildJsonObject {
-            put("mfaApiCode", "0107")
-            put("userAccount", username)
-        },
-        requestType = HttpRequestType.SEND_MFA,
-    )
+    val (_, response) =
+        performJsonRequest(
+            url = "$apiBaseUrl/mfa/selverifmeth",
+            method = HttpMethod.POST,
+            headers = loginMfaHeaders,
+            body =
+                buildJsonObject {
+                    put("mfaApiCode", "0107")
+                    put("userAccount", username)
+                },
+            requestType = HttpRequestType.SEND_MFA,
+        )
 
     val json = parseCanadaResponse(response.body, context = "mfa/selverifmeth")
-    val result = json["result"] as? JsonObject
-        ?: throw ApiException.logError("Invalid Canada selverifmeth response", apiName = apiName)
+    val result =
+        json["result"] as? JsonObject
+            ?: throw ApiException.logError("Invalid Canada selverifmeth response", apiName = apiName)
 
     val userInfoUuid = result["userInfoUuid"].asStringOrNull() ?: ""
     val emailList = (result["emailList"] as? JsonArray)?.mapNotNull { it.asStringOrNull() } ?: emptyList()
@@ -125,37 +128,40 @@ internal suspend fun HyundaiCanadaClient.sendMfaCodeImpl(xid: String, method: Mf
     }
     val email = mfaEmail ?: username
 
-    val body = buildJsonObject {
-        put("mfaApiCode", "0107")
-        put("userInfoUuid", xid)
-        put("userAccount", email)
-        when (method) {
-            MfaMethod.EMAIL -> {
-                put("otpMethod", "E")
-                put("userPhone", "")
-            }
+    val body =
+        buildJsonObject {
+            put("mfaApiCode", "0107")
+            put("userInfoUuid", xid)
+            put("userAccount", email)
+            when (method) {
+                MfaMethod.EMAIL -> {
+                    put("otpMethod", "E")
+                    put("userPhone", "")
+                }
 
-            MfaMethod.SMS -> {
-                put("otpMethod", "S")
-                // Echo back whatever phone digits selverifmeth returned — the
-                // server uses this to locate the SMS destination.
-                put("userPhone", mfaPhone ?: "")
+                MfaMethod.SMS -> {
+                    put("otpMethod", "S")
+                    // Echo back whatever phone digits selverifmeth returned — the
+                    // server uses this to locate the SMS destination.
+                    put("userPhone", mfaPhone ?: "")
+                }
             }
         }
-    }
 
-    val (_, response) = performJsonRequest(
-        url = "$apiBaseUrl/mfa/sendotp",
-        method = HttpMethod.POST,
-        headers = mfaHeaders(),
-        body = body,
-        requestType = HttpRequestType.SEND_MFA,
-    )
+    val (_, response) =
+        performJsonRequest(
+            url = "$apiBaseUrl/mfa/sendotp",
+            method = HttpMethod.POST,
+            headers = mfaHeaders(),
+            body = body,
+            requestType = HttpRequestType.SEND_MFA,
+        )
 
     val json = parseCanadaResponse(response.body, context = "mfa/sendotp")
     val result = json["result"] as? JsonObject
-    val otpKey = result?.get("otpKey").asStringOrNull()
-        ?: throw ApiException.logError("Invalid Canada sendotp response", apiName = apiName)
+    val otpKey =
+        result?.get("otpKey").asStringOrNull()
+            ?: throw ApiException.logError("Invalid Canada sendotp response", apiName = apiName)
     mfaOtpKey = otpKey
 }
 
@@ -163,11 +169,12 @@ internal suspend fun HyundaiCanadaClient.verifyMfaCodeImpl(xid: String, code: St
     if (xid.isEmpty()) {
         throw ApiException.logError("MFA flow not initialized", apiName = apiName)
     }
-    val storedOtpKey = mfaOtpKey
-        ?: throw ApiException.logError(
-            "MFA verify called before sendMfaCode established otpKey",
-            apiName = apiName,
-        )
+    val storedOtpKey =
+        mfaOtpKey
+            ?: throw ApiException.logError(
+                "MFA verify called before sendMfaCode established otpKey",
+                apiName = apiName,
+            )
 
     // `validateotp` and `genmfatkn` need the *original* user-typed username
     // for their `userAccount` field — the Python reference uses `username`
@@ -198,18 +205,20 @@ internal suspend fun HyundaiCanadaClient.verifyMfaCodeImpl(xid: String, code: St
  * the OTP is correct.
  */
 private suspend fun HyundaiCanadaClient.validateOtp(code: String, otpKey: String): String {
-    val (_, response) = performJsonRequest(
-        url = "$apiBaseUrl/mfa/validateotp",
-        method = HttpMethod.POST,
-        headers = mfaHeaders(),
-        body = buildJsonObject {
-            put("otpNo", code)
-            put("userAccount", username)
-            put("otpKey", otpKey)
-            put("mfaApiCode", "0107")
-        },
-        requestType = HttpRequestType.VERIFY_MFA,
-    )
+    val (_, response) =
+        performJsonRequest(
+            url = "$apiBaseUrl/mfa/validateotp",
+            method = HttpMethod.POST,
+            headers = mfaHeaders(),
+            body =
+                buildJsonObject {
+                    put("otpNo", code)
+                    put("userAccount", username)
+                    put("otpKey", otpKey)
+                    put("mfaApiCode", "0107")
+                },
+            requestType = HttpRequestType.VERIFY_MFA,
+        )
 
     // 7999 = "We apologize, but your request could not be processed."
     // Hyundai's catch-all when the OTP is wrong / expired or any other
@@ -230,8 +239,9 @@ private suspend fun HyundaiCanadaClient.validateOtp(code: String, otpKey: String
     }
 
     val json = parseCanadaResponse(response.body, context = "mfa/validateotp")
-    val result = json["result"] as? JsonObject
-        ?: throw ApiException.logError("Invalid Canada validateotp response", apiName = apiName)
+    val result =
+        json["result"] as? JsonObject
+            ?: throw ApiException.logError("Invalid Canada validateotp response", apiName = apiName)
 
     val verified = result["verifiedOtp"].asJsonBooleanOrNull() ?: false
     val validationKey = result["otpValidationKey"].asStringOrNull()
@@ -247,25 +257,28 @@ private suspend fun HyundaiCanadaClient.validateOtp(code: String, otpKey: String
  * `otpEmail` is the email-form returned by `selverifmeth`.
  */
 private suspend fun HyundaiCanadaClient.genMfaToken(validationKey: String, otpEmail: String): AuthToken {
-    val (_, response) = performJsonRequest(
-        url = "$apiBaseUrl/mfa/genmfatkn",
-        method = HttpMethod.POST,
-        headers = mfaHeaders(),
-        body = buildJsonObject {
-            put("userAccount", username)
-            put("otpEmail", otpEmail)
-            put("mfaApiCode", "0107")
-            put("otpValidationKey", validationKey)
-            put("mfaYn", "Y")
-        },
-        requestType = HttpRequestType.VERIFY_MFA,
-    )
+    val (_, response) =
+        performJsonRequest(
+            url = "$apiBaseUrl/mfa/genmfatkn",
+            method = HttpMethod.POST,
+            headers = mfaHeaders(),
+            body =
+                buildJsonObject {
+                    put("userAccount", username)
+                    put("otpEmail", otpEmail)
+                    put("mfaApiCode", "0107")
+                    put("otpValidationKey", validationKey)
+                    put("mfaYn", "Y")
+                },
+            requestType = HttpRequestType.VERIFY_MFA,
+        )
 
     val json = parseCanadaResponse(response.body, context = "mfa/genmfatkn")
     val result = json["result"] as? JsonObject
     val token = result?.get("token") as? JsonObject
-    val accessToken = token?.get("accessToken").asStringOrNull()
-        ?: throw ApiException.logError("Invalid Canada genmfatkn response", apiName = apiName)
+    val accessToken =
+        token?.get("accessToken").asStringOrNull()
+            ?: throw ApiException.logError("Invalid Canada genmfatkn response", apiName = apiName)
 
     val expiresIn = token?.get("expireIn").asIntOrNull() ?: 3600
     val refreshToken = token?.get("refreshToken").asStringOrNull() ?: ""
@@ -281,17 +294,19 @@ private suspend fun HyundaiCanadaClient.genMfaToken(validationKey: String, otpEm
  * Default header set for any MFA endpoint — mirrors the standard [headers]
  * helper plus the cached cookie when we have one.
  */
-private fun HyundaiCanadaClient.mfaHeaders(): Map<String, String> = buildMap {
-    putAll(headers())
-    cloudFlareCookie?.let { put("Cookie", it) }
-}
+private fun HyundaiCanadaClient.mfaHeaders(): Map<String, String> =
+    buildMap {
+        putAll(headers())
+        cloudFlareCookie?.let { put("Cookie", it) }
+    }
 
 internal fun HyundaiCanadaClient.completeMfaLoginImpl(): AuthToken {
-    val token = mfaCompletedAuthToken
-        ?: throw ApiException.logError(
-            "completeMfaLogin called before successful verifyMfaCode",
-            apiName = apiName,
-        )
+    val token =
+        mfaCompletedAuthToken
+            ?: throw ApiException.logError(
+                "completeMfaLogin called before successful verifyMfaCode",
+                apiName = apiName,
+            )
     // One-shot: clear stashed state so a subsequent MFA flow has to re-run
     // from the top.
     mfaCompletedAuthToken = null

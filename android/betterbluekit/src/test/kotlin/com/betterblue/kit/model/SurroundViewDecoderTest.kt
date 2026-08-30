@@ -6,7 +6,6 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class SurroundViewDecoderTest {
-
     private fun jpeg(payload: ByteArray, withEnd: Boolean = true): ByteArray {
         val start = byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte())
         val end = if (withEnd) byteArrayOf(0xFF.toByte(), 0xD9.toByte()) else ByteArray(0)

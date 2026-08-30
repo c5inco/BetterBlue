@@ -25,8 +25,11 @@ import com.betterblue.app.data.db.entity.VehicleEntity
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun accountDao(): AccountDao
+
     abstract fun vehicleDao(): VehicleDao
+
     abstract fun climatePresetDao(): ClimatePresetDao
+
     abstract fun httpLogDao(): HttpLogDao
 
     companion object {

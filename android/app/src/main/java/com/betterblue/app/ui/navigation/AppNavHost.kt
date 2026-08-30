@@ -38,9 +38,17 @@ object DeepLinks {
 sealed interface DeepLinkAction {
     val vin: String
 
-    data class Select(override val vin: String) : DeepLinkAction
-    data class StartClimate(override val vin: String) : DeepLinkAction
-    data class StartCharge(override val vin: String) : DeepLinkAction
+    data class Select(
+        override val vin: String,
+    ) : DeepLinkAction
+
+    data class StartClimate(
+        override val vin: String,
+    ) : DeepLinkAction
+
+    data class StartCharge(
+        override val vin: String,
+    ) : DeepLinkAction
 }
 
 @Composable
@@ -51,12 +59,19 @@ fun AppNavHost(
     NavHost(navController = navController, startDestination = Routes.MAIN) {
         composable(
             route = Routes.MAIN,
-            deepLinks = listOf(
-                navDeepLink { uriPattern = DeepLinks.VEHICLE },
-                navDeepLink { uriPattern = DeepLinks.START_CLIMATE },
-                navDeepLink { uriPattern = DeepLinks.START_CHARGE },
-            ),
-            arguments = listOf(navArgument("vin") { type = NavType.StringType; nullable = true }),
+            deepLinks =
+                listOf(
+                    navDeepLink { uriPattern = DeepLinks.VEHICLE },
+                    navDeepLink { uriPattern = DeepLinks.START_CLIMATE },
+                    navDeepLink { uriPattern = DeepLinks.START_CHARGE },
+                ),
+            arguments =
+                listOf(
+                    navArgument("vin") {
+                        type = NavType.StringType
+                        nullable = true
+                    },
+                ),
         ) { entry ->
             // A deep link may arrive either as a cold-start intent (resolved by
             // the activity into startDeepLink) or through the nav argument.

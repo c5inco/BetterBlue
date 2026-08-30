@@ -15,10 +15,11 @@ import kotlinx.serialization.json.Json
  * explicit in stored payloads.
  */
 object Converters {
-    val json: Json = Json {
-        ignoreUnknownKeys = true
-        encodeDefaults = true
-    }
+    val json: Json =
+        Json {
+            ignoreUnknownKeys = true
+            encodeDefaults = true
+        }
 
     // Distance
 
@@ -96,9 +97,10 @@ object Converters {
     fun deviceTypeFromString(value: String): DeviceType =
         DeviceType.entries.firstOrNull { it.name == value } ?: DeviceType.PHONE
 
-    private inline fun <reified T> decodeOrNull(text: String): T? = try {
-        json.decodeFromString<T>(text)
-    } catch (_: Exception) {
-        null
-    }
+    private inline fun <reified T> decodeOrNull(text: String): T? =
+        try {
+            json.decodeFromString<T>(text)
+        } catch (_: Exception) {
+            null
+        }
 }

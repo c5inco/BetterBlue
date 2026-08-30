@@ -14,12 +14,14 @@ import javax.inject.Singleton
  * `StatusWaitingManager` actor's continuation map.
  */
 @Singleton
-class StatusChangeBus @Inject constructor() {
-    private val updates = MutableSharedFlow<VehicleStatus>(extraBufferCapacity = 16)
+class StatusChangeBus
+    @Inject
+    constructor() {
+        private val updates = MutableSharedFlow<VehicleStatus>(extraBufferCapacity = 16)
 
-    val statusUpdates: SharedFlow<VehicleStatus> = updates.asSharedFlow()
+        val statusUpdates: SharedFlow<VehicleStatus> = updates.asSharedFlow()
 
-    fun publish(status: VehicleStatus) {
-        updates.tryEmit(status)
+        fun publish(status: VehicleStatus) {
+            updates.tryEmit(status)
+        }
     }
-}

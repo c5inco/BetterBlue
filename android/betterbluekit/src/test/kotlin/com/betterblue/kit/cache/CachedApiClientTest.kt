@@ -49,165 +49,175 @@ private class CountingClient : ApiClient {
     override fun optionalFeaturesSupported(): Set<OptionalApiFeature> = setOf(OptionalApiFeature.MFA)
 
     companion object {
-        fun status(vin: String) = VehicleStatus(
-            vin = vin,
-            location = VehicleStatus.Location(0.0, 0.0),
-            lockStatus = VehicleStatus.LockStatus.LOCKED,
-            climateStatus = VehicleStatus.ClimateStatus(
-                defrostOn = false,
-                airControlOn = false,
-                steeringWheelHeatingOn = false,
-                temperature = Temperature(Temperature.Units.FAHRENHEIT, 70.0),
-            ),
-        )
+        fun status(vin: String) =
+            VehicleStatus(
+                vin = vin,
+                location = VehicleStatus.Location(0.0, 0.0),
+                lockStatus = VehicleStatus.LockStatus.LOCKED,
+                climateStatus =
+                    VehicleStatus.ClimateStatus(
+                        defrostOn = false,
+                        airControlOn = false,
+                        steeringWheelHeatingOn = false,
+                        temperature = Temperature(Temperature.Units.FAHRENHEIT, 70.0),
+                    ),
+            )
     }
 }
 
-private fun vehicle(vin: String = "VIN1") = Vehicle(
-    vin = vin,
-    regId = "reg",
-    model = "model",
-    accountId = "acc",
-    fuelType = FuelType.ELECTRIC,
-    generation = 3,
-    odometer = Distance(0.0, Distance.Units.MILES),
-)
+private fun vehicle(vin: String = "VIN1") =
+    Vehicle(
+        vin = vin,
+        regId = "reg",
+        model = "model",
+        accountId = "acc",
+        fuelType = FuelType.ELECTRIC,
+        generation = 3,
+        odometer = Distance(0.0, Distance.Units.MILES),
+    )
 
 private fun token() = AuthToken("a", "r", Instant.now().plusSeconds(3600))
 
 class CachedApiClientTest {
+    @Test
+    fun `login responses are cached within the ttl`() =
+        runTest {
+            var now = 0L
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext), clock = { now })
+
+            client.login()
+            client.login()
+            assertEquals(1, underlying.loginCalls.get())
+
+            // Past the TTL the cache expires.
+            now += 6_000
+            client.login()
+            assertEquals(2, underlying.loginCalls.get())
+        }
 
     @Test
-    fun `login responses are cached within the ttl`() = runTest {
-        var now = 0L
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext), clock = { now })
+    fun `concurrent identical requests join one in-flight call`() =
+        runTest {
+            val underlying = CountingClient()
+            val gate = CompletableDeferred<Unit>()
+            underlying.gate = gate
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
 
-        client.login()
-        client.login()
-        assertEquals(1, underlying.loginCalls.get())
+            val first = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
+            val second = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
+            yield()
+            gate.complete(Unit)
+            first.await()
+            second.await()
 
-        // Past the TTL the cache expires.
-        now += 6_000
-        client.login()
-        assertEquals(2, underlying.loginCalls.get())
-    }
-
-    @Test
-    fun `concurrent identical requests join one in-flight call`() = runTest {
-        val underlying = CountingClient()
-        val gate = CompletableDeferred<Unit>()
-        underlying.gate = gate
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
-
-        val first = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
-        val second = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
-        yield()
-        gate.complete(Unit)
-        first.await()
-        second.await()
-
-        assertEquals(1, underlying.statusCalls.get())
-    }
+            assertEquals(1, underlying.statusCalls.get())
+        }
 
     @Test
-    fun `cached=false bypasses ttl but still coalesces in-flight requests`() = runTest {
-        var now = 0L
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext), clock = { now })
+    fun `cached=false bypasses ttl but still coalesces in-flight requests`() =
+        runTest {
+            var now = 0L
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext), clock = { now })
 
-        // Prime the cache.
-        client.fetchVehicleStatus(vehicle(), token(), cached = true)
-        assertEquals(1, underlying.statusCalls.get())
+            // Prime the cache.
+            client.fetchVehicleStatus(vehicle(), token(), cached = true)
+            assertEquals(1, underlying.statusCalls.get())
 
-        // A cached read hits the TTL cache…
-        client.fetchVehicleStatus(vehicle(), token(), cached = true)
-        assertEquals(1, underlying.statusCalls.get())
+            // A cached read hits the TTL cache…
+            client.fetchVehicleStatus(vehicle(), token(), cached = true)
+            assertEquals(1, underlying.statusCalls.get())
 
-        // …but a real-time read bypasses it.
-        client.fetchVehicleStatus(vehicle(), token(), cached = false)
-        assertEquals(2, underlying.statusCalls.get())
+            // …but a real-time read bypasses it.
+            client.fetchVehicleStatus(vehicle(), token(), cached = false)
+            assertEquals(2, underlying.statusCalls.get())
 
-        // Two simultaneous real-time reads still only poll the modem once.
-        val gate = CompletableDeferred<Unit>()
-        underlying.gate = gate
-        val first = async { client.fetchVehicleStatus(vehicle(), token(), cached = false) }
-        val second = async { client.fetchVehicleStatus(vehicle(), token(), cached = false) }
-        yield()
-        gate.complete(Unit)
-        first.await()
-        second.await()
-        assertEquals(3, underlying.statusCalls.get())
-    }
-
-    @Test
-    fun `statuses for different vins cache independently`() = runTest {
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
-
-        client.fetchVehicleStatus(vehicle("VIN1"), token(), cached = true)
-        client.fetchVehicleStatus(vehicle("VIN2"), token(), cached = true)
-        assertEquals(2, underlying.statusCalls.get())
-    }
+            // Two simultaneous real-time reads still only poll the modem once.
+            val gate = CompletableDeferred<Unit>()
+            underlying.gate = gate
+            val first = async { client.fetchVehicleStatus(vehicle(), token(), cached = false) }
+            val second = async { client.fetchVehicleStatus(vehicle(), token(), cached = false) }
+            yield()
+            gate.complete(Unit)
+            first.await()
+            second.await()
+            assertEquals(3, underlying.statusCalls.get())
+        }
 
     @Test
-    fun `commands are never cached but identical concurrent commands dedupe`() = runTest {
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
+    fun `statuses for different vins cache independently`() =
+        runTest {
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
 
-        client.sendCommand(vehicle(), VehicleCommand.Lock, token())
-        client.sendCommand(vehicle(), VehicleCommand.Lock, token())
-        assertEquals(2, underlying.commandCalls.get())
-
-        val gate = CompletableDeferred<Unit>()
-        underlying.gate = gate
-        val first = async { client.sendCommand(vehicle(), VehicleCommand.Lock, token()) }
-        val second = async { client.sendCommand(vehicle(), VehicleCommand.Lock, token()) }
-        yield()
-        gate.complete(Unit)
-        first.await()
-        second.await()
-        assertEquals(3, underlying.commandCalls.get())
-    }
+            client.fetchVehicleStatus(vehicle("VIN1"), token(), cached = true)
+            client.fetchVehicleStatus(vehicle("VIN2"), token(), cached = true)
+            assertEquals(2, underlying.statusCalls.get())
+        }
 
     @Test
-    fun `command invalidates the vehicle's cached status`() = runTest {
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
+    fun `commands are never cached but identical concurrent commands dedupe`() =
+        runTest {
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
 
-        client.fetchVehicleStatus(vehicle(), token(), cached = true)
-        assertEquals(1, underlying.statusCalls.get())
+            client.sendCommand(vehicle(), VehicleCommand.Lock, token())
+            client.sendCommand(vehicle(), VehicleCommand.Lock, token())
+            assertEquals(2, underlying.commandCalls.get())
 
-        client.sendCommand(vehicle(), VehicleCommand.Lock, token())
-
-        // The cached entry was invalidated, so this refetches.
-        client.fetchVehicleStatus(vehicle(), token(), cached = true)
-        assertEquals(2, underlying.statusCalls.get())
-    }
-
-    @Test
-    fun `a cancelled caller does not kill the shared request`() = runTest {
-        val underlying = CountingClient()
-        val gate = CompletableDeferred<Unit>()
-        underlying.gate = gate
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
-
-        val doomed = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
-        val survivor = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
-        yield()
-        doomed.cancelAndJoin()
-        gate.complete(Unit)
-
-        assertEquals("VIN1", survivor.await().vin)
-        assertEquals(1, underlying.statusCalls.get())
-    }
+            val gate = CompletableDeferred<Unit>()
+            underlying.gate = gate
+            val first = async { client.sendCommand(vehicle(), VehicleCommand.Lock, token()) }
+            val second = async { client.sendCommand(vehicle(), VehicleCommand.Lock, token()) }
+            yield()
+            gate.complete(Unit)
+            first.await()
+            second.await()
+            assertEquals(3, underlying.commandCalls.get())
+        }
 
     @Test
-    fun `capability queries forward to the underlying client`() = runTest {
-        val underlying = CountingClient()
-        val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
-        // Without the forward, the interface default (empty) would answer for
-        // the wrapper and hide MFA for every account.
-        assertTrue(client.optionalFeaturesSupported().contains(OptionalApiFeature.MFA))
-    }
+    fun `command invalidates the vehicle's cached status`() =
+        runTest {
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
+
+            client.fetchVehicleStatus(vehicle(), token(), cached = true)
+            assertEquals(1, underlying.statusCalls.get())
+
+            client.sendCommand(vehicle(), VehicleCommand.Lock, token())
+
+            // The cached entry was invalidated, so this refetches.
+            client.fetchVehicleStatus(vehicle(), token(), cached = true)
+            assertEquals(2, underlying.statusCalls.get())
+        }
+
+    @Test
+    fun `a cancelled caller does not kill the shared request`() =
+        runTest {
+            val underlying = CountingClient()
+            val gate = CompletableDeferred<Unit>()
+            underlying.gate = gate
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
+
+            val doomed = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
+            val survivor = async { client.fetchVehicleStatus(vehicle(), token(), cached = true) }
+            yield()
+            doomed.cancelAndJoin()
+            gate.complete(Unit)
+
+            assertEquals("VIN1", survivor.await().vin)
+            assertEquals(1, underlying.statusCalls.get())
+        }
+
+    @Test
+    fun `capability queries forward to the underlying client`() =
+        runTest {
+            val underlying = CountingClient()
+            val client = CachedApiClient(underlying, CoroutineScope(coroutineContext))
+            // Without the forward, the interface default (empty) would answer for
+            // the wrapper and hide MFA for every account.
+            assertTrue(client.optionalFeaturesSupported().contains(OptionalApiFeature.MFA))
+        }
 }

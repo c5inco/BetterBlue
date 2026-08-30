@@ -41,18 +41,19 @@ enum class HttpRequestType {
     ;
 
     val displayName: String
-        get() = when (this) {
-            LOGIN -> "Login"
-            FETCH_VEHICLES -> "Fetch Vehicles"
-            FETCH_VEHICLE_STATUS -> "Fetch Status"
-            SEND_COMMAND -> "Send Command"
-            SEND_MFA -> "Send MFA"
-            VERIFY_MFA -> "Verify MFA"
-            FETCH_EV_TRIP_SUMMARY -> "Fetch Trip Summary"
-            FETCH_EV_TRIP_INFO -> "Fetch Trip Info"
-            REQUEST_SURROUND_VIEW -> "Request Surround View"
-            FETCH_SURROUND_VIEW -> "Fetch Surround View"
-        }
+        get() =
+            when (this) {
+                LOGIN -> "Login"
+                FETCH_VEHICLES -> "Fetch Vehicles"
+                FETCH_VEHICLE_STATUS -> "Fetch Status"
+                SEND_COMMAND -> "Send Command"
+                SEND_MFA -> "Send MFA"
+                VERIFY_MFA -> "Verify MFA"
+                FETCH_EV_TRIP_SUMMARY -> "Fetch Trip Summary"
+                FETCH_EV_TRIP_INFO -> "Fetch Trip Info"
+                REQUEST_SURROUND_VIEW -> "Request Surround View"
+                FETCH_SURROUND_VIEW -> "Fetch Surround View"
+            }
 }
 
 /** Receives one [HttpLog] per API request; implementations must be thread-safe. */

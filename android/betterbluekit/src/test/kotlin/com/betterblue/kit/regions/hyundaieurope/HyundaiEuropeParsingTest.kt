@@ -23,41 +23,43 @@ import org.junit.jupiter.api.assertThrows
  * Swift `HyEuAPIParsingTests` suite.
  */
 class HyundaiEuropeParsingTest {
+    private fun makeClient() =
+        HyundaiEuropeClient(
+            ApiClientConfig(
+                region = Region.EUROPE,
+                brand = Brand.HYUNDAI,
+                username = "test@example.com",
+                password = "password123",
+                pin = "1234",
+                accountId = "00000000-0000-0000-0000-000000000001",
+            ),
+        )
 
-    private fun makeClient() = HyundaiEuropeClient(
-        ApiClientConfig(
-            region = Region.EUROPE,
-            brand = Brand.HYUNDAI,
-            username = "test@example.com",
-            password = "password123",
-            pin = "1234",
-            accountId = "00000000-0000-0000-0000-000000000001",
-        ),
-    )
-
-    private fun makeVehicle(ccs2: Boolean, fuelType: FuelType = FuelType.ELECTRIC) = Vehicle(
-        vin = "TESTVIN0000000000",
-        regId = "reg-1",
-        model = "IONIQ 5",
-        accountId = "00000000-0000-0000-0000-000000000002",
-        fuelType = fuelType,
-        generation = 2,
-        odometer = Distance(0.0, Distance.Units.KILOMETERS),
-        marketOptions = VehicleMarketOptions.HyundaiEurope(ccs2Supported = ccs2),
-    )
+    private fun makeVehicle(ccs2: Boolean, fuelType: FuelType = FuelType.ELECTRIC) =
+        Vehicle(
+            vin = "TESTVIN0000000000",
+            regId = "reg-1",
+            model = "IONIQ 5",
+            accountId = "00000000-0000-0000-0000-000000000002",
+            fuelType = fuelType,
+            generation = 2,
+            odometer = Distance(0.0, Distance.Units.KILOMETERS),
+            marketOptions = VehicleMarketOptions.HyundaiEurope(ccs2Supported = ccs2),
+        )
 
     // Vehicle list
 
     @Test
     fun `vehicle list parses type and ccs2 support`() {
-        val payload = """
+        val payload =
+            """
             {"resMsg":{"vehicles":[
               {"vehicleId":"reg-1","vin":"VIN00000000000001","nickname":"IONIQ 5",
                "type":"EV","ccuCCS2ProtocolSupport":1},
               {"vehicleId":"reg-2","vin":"VIN00000000000002","vehicleName":"TUCSON PHEV",
                "type":"PE","ccuCCS2ProtocolSupport":0}
             ]}}
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val vehicles = makeClient().parseVehiclesResponse(payload)
         assertEquals(2, vehicles.size)
@@ -82,7 +84,8 @@ class HyundaiEuropeParsingTest {
 
     // CCS2 status
 
-    private val ccs2Status = """
+    private val ccs2Status =
+        """
         {"resMsg":{"state":{"Vehicle":{
           "Drivetrain":{"Odometer":12345.0,"FuelSystem":{"DTE":{"Total":231,"Unit":1}}},
           "Green":{
@@ -112,15 +115,16 @@ class HyundaiEuropeParsingTest {
           "Location":{"GeoCoord":{"Latitude":52.3702,"Longitude":4.8952},"Date":"20240315183045.000"},
           "DrivingReady":0
         }},"lastUpdateTime":1710527445000}}
-    """.trimIndent().toByteArray()
+        """.trimIndent().toByteArray()
 
     @Test
     fun `ccs2 status parses ev, doors, climate and location`() {
-        val status = makeClient().parseVehicleStatusResponse(
-            ccs2Status,
-            locationData = null,
-            vehicle = makeVehicle(ccs2 = true),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                ccs2Status,
+                locationData = null,
+                vehicle = makeVehicle(ccs2 = true),
+            )
 
         assertEquals("TESTVIN0000000000", status.vin)
         assertEquals(12345.0, status.odometer?.length)
@@ -153,17 +157,19 @@ class HyundaiEuropeParsingTest {
     @Test
     fun `ccs2 unlocked state reads through the inversion`() {
         val unlocked = String(ccs2Status).replace("\"Driver\":{\"Lock\":0", "\"Driver\":{\"Lock\":1")
-        val status = makeClient().parseVehicleStatusResponse(
-            unlocked.toByteArray(),
-            locationData = null,
-            vehicle = makeVehicle(ccs2 = true),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                unlocked.toByteArray(),
+                locationData = null,
+                vehicle = makeVehicle(ccs2 = true),
+            )
         assertEquals(VehicleStatus.LockStatus.UNLOCKED, status.lockStatus)
     }
 
     // Legacy status
 
-    private val legacyStatus = """
+    private val legacyStatus =
+        """
         {"resMsg":{"vehicleStatusInfo":{
           "vehicleStatus":{
             "doorLock":true,
@@ -188,15 +194,16 @@ class HyundaiEuropeParsingTest {
           "odometer":{"value":54321,"unit":1},
           "vehicleLocation":{"coord":{"lat":48.8566,"lon":2.3522},"time":"20240315183045"}
         }}}
-    """.trimIndent().toByteArray()
+        """.trimIndent().toByteArray()
 
     @Test
     fun `legacy status parses through the legacy path table`() {
-        val status = makeClient().parseVehicleStatusResponse(
-            legacyStatus,
-            locationData = null,
-            vehicle = makeVehicle(ccs2 = false),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                legacyStatus,
+                locationData = null,
+                vehicle = makeVehicle(ccs2 = false),
+            )
 
         assertEquals(54321.0, status.odometer?.length)
         assertEquals(85, status.battery12V)
@@ -222,15 +229,17 @@ class HyundaiEuropeParsingTest {
 
     @Test
     fun `park location wins when it is newer than the status location`() {
-        val park = """
+        val park =
+            """
             {"resMsg":{"gpsDetail":{"time":"20240316120000","coord":{"lat":51.5074,"lon":-0.1278}}}}
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
-        val status = makeClient().parseVehicleStatusResponse(
-            legacyStatus,
-            locationData = park,
-            vehicle = makeVehicle(ccs2 = false),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                legacyStatus,
+                locationData = park,
+                vehicle = makeVehicle(ccs2 = false),
+            )
         assertEquals(51.5074, status.location.latitude)
         assertEquals(-0.1278, status.location.longitude)
     }
@@ -238,21 +247,23 @@ class HyundaiEuropeParsingTest {
     @Test
     fun `null island is treated as no fix`() {
         val noFix = String(legacyStatus).replace("\"lat\":48.8566,\"lon\":2.3522", "\"lat\":0,\"lon\":0")
-        val status = makeClient().parseVehicleStatusResponse(
-            noFix.toByteArray(),
-            locationData = null,
-            vehicle = makeVehicle(ccs2 = false),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                noFix.toByteArray(),
+                locationData = null,
+                vehicle = makeVehicle(ccs2 = false),
+            )
         assertFalse(status.location.hasCoordinates)
     }
 
     @Test
     fun `a gas vehicle gets no ev status`() {
-        val status = makeClient().parseVehicleStatusResponse(
-            legacyStatus,
-            locationData = null,
-            vehicle = makeVehicle(ccs2 = false, fuelType = FuelType.GAS),
-        )
+        val status =
+            makeClient().parseVehicleStatusResponse(
+                legacyStatus,
+                locationData = null,
+                vehicle = makeVehicle(ccs2 = false, fuelType = FuelType.GAS),
+            )
         assertEquals(null, status.evStatus)
     }
 
@@ -271,9 +282,10 @@ class HyundaiEuropeParsingTest {
 
     @Test
     fun `refresh-grant token parses both tokens from the response`() {
-        val payload = """
+        val payload =
+            """
             {"access_token":"acc-123","refresh_token":"ref-456","expires_in":3600}
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val token = makeClient().parseAuthToken(payload, isRefresh = true)
         assertEquals("acc-123", token.accessToken)
@@ -285,17 +297,18 @@ class HyundaiEuropeParsingTest {
     fun `password-grant token keeps the configured refresh token`() {
         // The EU password-grant response carries no refresh_token; the one
         // already on the account persists.
-        val client = HyundaiEuropeClient(
-            ApiClientConfig(
-                region = Region.EUROPE,
-                brand = Brand.HYUNDAI,
-                username = "test@example.com",
-                password = "password123",
-                refreshToken = "stored-refresh",
-                pin = "1234",
-                accountId = "00000000-0000-0000-0000-000000000001",
-            ),
-        )
+        val client =
+            HyundaiEuropeClient(
+                ApiClientConfig(
+                    region = Region.EUROPE,
+                    brand = Brand.HYUNDAI,
+                    username = "test@example.com",
+                    password = "password123",
+                    refreshToken = "stored-refresh",
+                    pin = "1234",
+                    accountId = "00000000-0000-0000-0000-000000000001",
+                ),
+            )
         val payload = """{"access_token":"acc-123","expires_in":3600}""".toByteArray()
 
         val token = client.parseAuthToken(payload, isRefresh = false)

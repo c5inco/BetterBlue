@@ -29,7 +29,10 @@ import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
 
 /** The two resting positions of the vehicle sheet. */
-enum class SheetDetent { COLLAPSED, EXPANDED;
+enum class SheetDetent {
+    COLLAPSED,
+    EXPANDED,
+    ;
 
     val storageKey: String get() = name.lowercase()
 
@@ -63,16 +66,18 @@ fun PersistentSheet(
         val collapsedPx = with(density) { collapsedHeight.toPx() }
         val expandedPx = maxHeightPx * expandedHeightFraction
 
-        val anchors = remember(maxHeightPx, collapsedPx, expandedPx) {
-            DraggableAnchors {
-                SheetDetent.COLLAPSED at maxHeightPx - collapsedPx
-                SheetDetent.EXPANDED at maxHeightPx - expandedPx
+        val anchors =
+            remember(maxHeightPx, collapsedPx, expandedPx) {
+                DraggableAnchors {
+                    SheetDetent.COLLAPSED at maxHeightPx - collapsedPx
+                    SheetDetent.EXPANDED at maxHeightPx - expandedPx
+                }
             }
-        }
 
-        val dragState = remember {
-            AnchoredDraggableState(initialValue = detent)
-        }
+        val dragState =
+            remember {
+                AnchoredDraggableState(initialValue = detent)
+            }
 
         LaunchedEffect(anchors) { dragState.updateAnchors(anchors) }
 
@@ -93,20 +98,22 @@ fun PersistentSheet(
             shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
             tonalElevation = 3.dp,
             shadowElevation = 8.dp,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(maxHeight)
-                .offset { IntOffset(0, dragState.requireOffset().roundToInt()) },
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .height(maxHeight)
+                    .offset { IntOffset(0, dragState.requireOffset().roundToInt()) },
         ) {
             Box(Modifier.fillMaxSize()) {
                 // Drag handle: the sheet is only draggable by this strip, so
                 // scrollable card content underneath keeps its own gestures.
                 Box(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .fillMaxWidth()
-                        .height(28.dp)
-                        .anchoredDraggable(dragState, Orientation.Vertical),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .fillMaxWidth()
+                            .height(28.dp)
+                            .anchoredDraggable(dragState, Orientation.Vertical),
                     contentAlignment = Alignment.Center,
                 ) {
                     Box(

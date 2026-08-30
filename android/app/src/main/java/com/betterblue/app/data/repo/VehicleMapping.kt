@@ -4,38 +4,41 @@ import com.betterblue.app.data.db.entity.VehicleEntity
 import com.betterblue.kit.log.BBLogCategory
 import com.betterblue.kit.log.BBLogger
 import com.betterblue.kit.model.FuelType
-import com.betterblue.kit.policy.inferFuelType
-import com.betterblue.kit.policy.isFuelTypeUpgrade
 import com.betterblue.kit.model.Vehicle
 import com.betterblue.kit.model.VehicleMarketOptions
 import com.betterblue.kit.model.VehicleStatus
+import com.betterblue.kit.policy.inferFuelType
+import com.betterblue.kit.policy.isFuelTypeUpgrade
 
 /** The kit-facing projection of a stored vehicle. */
-fun VehicleEntity.toVehicle(): Vehicle = Vehicle(
-    vin = vin,
-    regId = regId,
-    model = model,
-    accountId = accountId,
-    fuelType = effectiveFuelType,
-    generation = generation,
-    odometer = odometer,
-    vehicleKey = vehicleKey,
-    marketOptions = marketOptions ?: VehicleMarketOptions.Generic,
-)
+fun VehicleEntity.toVehicle(): Vehicle =
+    Vehicle(
+        vin = vin,
+        regId = regId,
+        model = model,
+        accountId = accountId,
+        fuelType = effectiveFuelType,
+        generation = generation,
+        odometer = odometer,
+        vehicleKey = vehicleKey,
+        marketOptions = marketOptions ?: VehicleMarketOptions.Generic,
+    )
 
 /** Serial-name helpers. */
-private fun fuelTypeFromRaw(raw: String?): FuelType? = when (raw) {
-    "gas" -> FuelType.GAS
-    "electric" -> FuelType.ELECTRIC
-    "phev" -> FuelType.PHEV
-    else -> null
-}
+private fun fuelTypeFromRaw(raw: String?): FuelType? =
+    when (raw) {
+        "gas" -> FuelType.GAS
+        "electric" -> FuelType.ELECTRIC
+        "phev" -> FuelType.PHEV
+        else -> null
+    }
 
-fun FuelType.toRaw(): String = when (this) {
-    FuelType.GAS -> "gas"
-    FuelType.ELECTRIC -> "electric"
-    FuelType.PHEV -> "phev"
-}
+fun FuelType.toRaw(): String =
+    when (this) {
+        FuelType.GAS -> "gas"
+        FuelType.ELECTRIC -> "electric"
+        FuelType.PHEV -> "phev"
+    }
 
 /** Inferred (self-healed) powertrain, before any user override. */
 val VehicleEntity.inferredFuelType: FuelType
@@ -52,12 +55,13 @@ val VehicleEntity.displayName: String
     get() = customName?.trim().takeUnless { it.isNullOrEmpty() } ?: model
 
 val VehicleEntity.lockStatusEnum: VehicleStatus.LockStatus?
-    get() = when (lockStatus) {
-        "locked" -> VehicleStatus.LockStatus.LOCKED
-        "unlocked" -> VehicleStatus.LockStatus.UNLOCKED
-        "unknown" -> VehicleStatus.LockStatus.UNKNOWN
-        else -> null
-    }
+    get() =
+        when (lockStatus) {
+            "locked" -> VehicleStatus.LockStatus.LOCKED
+            "unlocked" -> VehicleStatus.LockStatus.UNLOCKED
+            "unknown" -> VehicleStatus.LockStatus.UNKNOWN
+            else -> null
+        }
 
 /**
  * Merges a fetched [VehicleStatus] into the stored row, preserving UI state.
@@ -86,9 +90,10 @@ fun VehicleEntity.updatedWithStatus(status: VehicleStatus): VehicleEntity {
 
     // Effective type gates which ranges are written; keep existing values
     // when the new status omits them (PHEVs legitimately carry both).
-    val effective = fuelTypeFromRaw(fuelTypeOverrideRaw)
-        ?: fuelTypeFromRaw(newFuelTypeRaw)
-        ?: FuelType.GAS
+    val effective =
+        fuelTypeFromRaw(fuelTypeOverrideRaw)
+            ?: fuelTypeFromRaw(newFuelTypeRaw)
+            ?: FuelType.GAS
 
     var newGasRange = gasRange
     var newEvStatus = evStatus
@@ -113,11 +118,12 @@ fun VehicleEntity.updatedWithStatus(status: VehicleStatus): VehicleEntity {
         gasRange = newGasRange,
         evStatus = newEvStatus,
         location = status.location,
-        lockStatus = when (status.lockStatus) {
-            VehicleStatus.LockStatus.LOCKED -> "locked"
-            VehicleStatus.LockStatus.UNLOCKED -> "unlocked"
-            VehicleStatus.LockStatus.UNKNOWN -> "unknown"
-        },
+        lockStatus =
+            when (status.lockStatus) {
+                VehicleStatus.LockStatus.LOCKED -> "locked"
+                VehicleStatus.LockStatus.UNLOCKED -> "unlocked"
+                VehicleStatus.LockStatus.UNKNOWN -> "unknown"
+            },
         climateStatus = status.climateStatus,
         odometer = status.odometer ?: odometer,
         battery12V = status.battery12V,
@@ -133,8 +139,9 @@ fun VehicleEntity.updatedWithStatus(status: VehicleStatus): VehicleEntity {
  * Off-axis-range cleanup after a fuel-type override change: stale ranges set
  * BEFORE the override won't clear on their own.
  */
-fun VehicleEntity.normalizedForCurrentFuelType(): VehicleEntity = when (effectiveFuelType) {
-    FuelType.GAS -> copy(evStatus = null)
-    FuelType.ELECTRIC -> copy(gasRange = null)
-    FuelType.PHEV -> this
-}
+fun VehicleEntity.normalizedForCurrentFuelType(): VehicleEntity =
+    when (effectiveFuelType) {
+        FuelType.GAS -> copy(evStatus = null)
+        FuelType.ELECTRIC -> copy(gasRange = null)
+        FuelType.PHEV -> this
+    }

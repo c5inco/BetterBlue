@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class Uuid5Test {
-
     @Test
     fun `RFC 4122 test vector for the DNS namespace`() {
         // Well-known UUIDv5 vector: uuid5(NAMESPACE_DNS, "www.example.org")

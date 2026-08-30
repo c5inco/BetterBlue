@@ -187,9 +187,10 @@ private fun UnitPickerRow(
     onSelect: (Int) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Column { Text(label, style = MaterialTheme.typography.bodyLarge) }

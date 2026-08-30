@@ -42,8 +42,9 @@ internal fun HyundaiUsaClient.parseLoginResponse(data: ByteArray): AuthToken {
 
 internal fun HyundaiUsaClient.parseVehiclesResponse(data: ByteArray): List<Vehicle> {
     val json = ApiClientBase.parseJsonObject(data)
-    val vehicleArray = json["enrolledVehicleDetails"] as? JsonArray
-        ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
+    val vehicleArray =
+        json["enrolledVehicleDetails"] as? JsonArray
+            ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
 
     return vehicleArray.mapNotNull { vehicleData ->
         val details = (vehicleData as? JsonObject)?.get("vehicleDetails") as? JsonObject ?: return@mapNotNull null
@@ -58,11 +59,12 @@ internal fun HyundaiUsaClient.parseVehiclesResponse(data: ByteArray): List<Vehic
             regId = regId,
             model = nickname,
             accountId = accountId,
-            fuelType = when (evStatus) {
-                "E" -> FuelType.ELECTRIC
-                "P" -> FuelType.PHEV
-                else -> FuelType.GAS
-            },
+            fuelType =
+                when (evStatus) {
+                    "E" -> FuelType.ELECTRIC
+                    "P" -> FuelType.PHEV
+                    else -> FuelType.GAS
+                },
             generation = generation.toIntOrNull() ?: 1,
             odometer = Distance(details["odometer"].asDoubleOrNull() ?: 0.0, Distance.Units.MILES),
         )
@@ -71,19 +73,22 @@ internal fun HyundaiUsaClient.parseVehiclesResponse(data: ByteArray): List<Vehic
 
 internal fun HyundaiUsaClient.parseVehicleStatusResponse(data: ByteArray, vehicle: Vehicle): VehicleStatus {
     val json = ApiClientBase.parseJsonObject(data)
-    val statusData = json["vehicleStatus"] as? JsonObject
-        ?: throw ApiException.logError("Invalid status response", apiName = apiName)
+    val statusData =
+        json["vehicleStatus"] as? JsonObject
+            ?: throw ApiException.logError("Invalid status response", apiName = apiName)
 
     val airTemp = statusData["airTemp"] as? JsonObject
-    val climateStatus = VehicleStatus.ClimateStatus(
-        defrostOn = statusData["defrost"].asBooleanOrNull() ?: false,
-        airControlOn = statusData["airCtrlOn"].asBooleanOrNull() ?: false,
-        steeringWheelHeatingOn = (statusData["steerWheelHeat"].asIntOrNull() ?: 0) != 0,
-        temperature = Temperature.fromApi(
-            units = airTemp?.get("unit").asIntOrNull(),
-            value = airTemp?.get("value").asStringOrNull(),
-        ),
-    )
+    val climateStatus =
+        VehicleStatus.ClimateStatus(
+            defrostOn = statusData["defrost"].asBooleanOrNull() ?: false,
+            airControlOn = statusData["airCtrlOn"].asBooleanOrNull() ?: false,
+            steeringWheelHeatingOn = (statusData["steerWheelHeat"].asIntOrNull() ?: 0) != 0,
+            temperature =
+                Temperature.fromApi(
+                    units = airTemp?.get("unit").asIntOrNull(),
+                    value = airTemp?.get("value").asStringOrNull(),
+                ),
+        )
 
     val syncDate = statusData["dateTime"].asStringOrNull()?.let { BluelinkDates.parseIso8601(it) }
     val battery12V = (statusData["battery"] as? JsonObject)?.get("batSoc").asIntOrNull()
@@ -115,8 +120,9 @@ internal fun HyundaiUsaClient.parseCommandResponse(data: ByteArray) {
 
 internal fun HyundaiUsaClient.parseEvTripSummaryResponse(data: ByteArray): List<EVTripSummary> {
     val json = ApiClientBase.parseJsonObject(data)
-    val tripDetails = json["tripdetails"] as? JsonArray
-        ?: throw ApiException("Failed to parse trip details", apiName = apiName)
+    val tripDetails =
+        json["tripdetails"] as? JsonArray
+            ?: throw ApiException("Failed to parse trip details", apiName = apiName)
 
     return tripDetails.mapNotNull { tripElement ->
         val trip = tripElement as? JsonObject ?: return@mapNotNull null
@@ -163,11 +169,12 @@ private fun HyundaiUsaClient.parseEvStatus(statusData: JsonObject, vehicle: Vehi
     val evStatusData = statusData["evStatus"] as? JsonObject ?: return null
 
     val ranges = fuelRanges(statusData)
-    val evRange: Distance = if (ranges.size == 1) {
-        ranges.values.first()
-    } else {
-        ranges[FuelType.ELECTRIC] ?: return null
-    }
+    val evRange: Distance =
+        if (ranges.size == 1) {
+            ranges.values.first()
+        } else {
+            ranges[FuelType.ELECTRIC] ?: return null
+        }
 
     val fuelPercentage = evStatusData["batteryStatus"].asDoubleOrNull() ?: 0.0
     // Trust the API's `unit` field: the backend has been observed mislabelling
@@ -191,10 +198,11 @@ private fun HyundaiUsaClient.parseEvStatus(statusData: JsonObject, vehicle: Vehi
 
     return VehicleStatus.EvStatus(
         charging = evStatusData["batteryCharge"].asBooleanOrNull() ?: false,
-        chargeSpeed = maxOf(
-            evStatusData["batteryStndChrgPower"].asDoubleOrNull() ?: 0.0,
-            evStatusData["batteryFstChrgPower"].asDoubleOrNull() ?: 0.0,
-        ),
+        chargeSpeed =
+            maxOf(
+                evStatusData["batteryStndChrgPower"].asDoubleOrNull() ?: 0.0,
+                evStatusData["batteryFstChrgPower"].asDoubleOrNull() ?: 0.0,
+            ),
         evRange = VehicleStatus.FuelRange(range = evRange, percentage = fuelPercentage),
         plugType = VehicleStatus.PlugType.fromBatteryPlugin(batteryPlugin),
         chargeTimeSeconds = 60L * chargeTimeMinutes,
@@ -214,23 +222,26 @@ private fun fuelRanges(statusData: JsonObject): Map<FuelType, Distance> {
         val rangeByFuelData = distance["rangeByFuel"] as? JsonObject ?: continue
 
         (rangeByFuelData["evModeRange"] as? JsonObject)?.let { evRange ->
-            result[FuelType.ELECTRIC] = Distance(
-                length = evRange["value"].asDoubleOrNull() ?: 0.0,
-                units = Distance.Units.fromInt(evRange["unit"].asIntOrNull() ?: 2),
-            )
+            result[FuelType.ELECTRIC] =
+                Distance(
+                    length = evRange["value"].asDoubleOrNull() ?: 0.0,
+                    units = Distance.Units.fromInt(evRange["unit"].asIntOrNull() ?: 2),
+                )
         }
         (rangeByFuelData["gasModeRange"] as? JsonObject)?.let { gasRange ->
-            result[FuelType.GAS] = Distance(
-                length = gasRange["value"].asDoubleOrNull() ?: 0.0,
-                units = Distance.Units.fromInt(gasRange["unit"].asIntOrNull() ?: 2),
-            )
+            result[FuelType.GAS] =
+                Distance(
+                    length = gasRange["value"].asDoubleOrNull() ?: 0.0,
+                    units = Distance.Units.fromInt(gasRange["unit"].asIntOrNull() ?: 2),
+                )
         }
         val totalRange = rangeByFuelData["totalAvailableRange"] as? JsonObject
         if (totalRange != null && result.isEmpty()) {
-            result[FuelType.fromNumber(type)] = Distance(
-                length = totalRange["value"].asDoubleOrNull() ?: 0.0,
-                units = Distance.Units.fromInt(totalRange["unit"].asIntOrNull() ?: 2),
-            )
+            result[FuelType.fromNumber(type)] =
+                Distance(
+                    length = totalRange["value"].asDoubleOrNull() ?: 0.0,
+                    units = Distance.Units.fromInt(totalRange["unit"].asIntOrNull() ?: 2),
+                )
         }
     }
     return result

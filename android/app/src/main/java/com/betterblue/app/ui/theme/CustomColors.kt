@@ -10,23 +10,28 @@ import androidx.compose.ui.graphics.Color
  * can't crash.
  */
 object CustomColors {
-    data class Option(val name: String, val displayName: String, val color: Color)
-
-    val palette: List<Option> = listOf(
-        Option("blue", "Blue", Color(0xFF007AFF)),
-        Option("green", "Green", Color(0xFF34C759)),
-        Option("red", "Red", Color(0xFFFF3B30)),
-        Option("orange", "Orange", Color(0xFFFF9500)),
-        Option("yellow", "Yellow", Color(0xFFFFCC00)),
-        Option("pink", "Pink", Color(0xFFFF2D55)),
-        Option("purple", "Purple", Color(0xFFAF52DE)),
-        Option("indigo", "Indigo", Color(0xFF5856D6)),
-        Option("teal", "Teal", Color(0xFF30B0C7)),
-        Option("cyan", "Cyan", Color(0xFF32ADE6)),
-        Option("mint", "Mint", Color(0xFF00C7BE)),
-        Option("brown", "Brown", Color(0xFFA2845E)),
-        Option("gray", "Gray", Color(0xFF8E8E93)),
+    data class Option(
+        val name: String,
+        val displayName: String,
+        val color: Color,
     )
+
+    val palette: List<Option> =
+        listOf(
+            Option("blue", "Blue", Color(0xFF007AFF)),
+            Option("green", "Green", Color(0xFF34C759)),
+            Option("red", "Red", Color(0xFFFF3B30)),
+            Option("orange", "Orange", Color(0xFFFF9500)),
+            Option("yellow", "Yellow", Color(0xFFFFCC00)),
+            Option("pink", "Pink", Color(0xFFFF2D55)),
+            Option("purple", "Purple", Color(0xFFAF52DE)),
+            Option("indigo", "Indigo", Color(0xFF5856D6)),
+            Option("teal", "Teal", Color(0xFF30B0C7)),
+            Option("cyan", "Cyan", Color(0xFF32ADE6)),
+            Option("mint", "Mint", Color(0xFF00C7BE)),
+            Option("brown", "Brown", Color(0xFFA2845E)),
+            Option("gray", "Gray", Color(0xFF8E8E93)),
+        )
 
     fun color(name: String?, default: String): Color =
         palette.firstOrNull { it.name == name }?.color

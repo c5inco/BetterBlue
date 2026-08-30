@@ -19,29 +19,30 @@ import org.junit.jupiter.api.Test
  * HyundaiCanadaParsingTests.swift 1:1.
  */
 class HyundaiCanadaParsingTest {
-
-    private fun makeClient() = HyundaiCanadaClient(
-        ApiClientConfig(
-            region = Region.CANADA,
-            brand = Brand.HYUNDAI,
-            username = "test@example.com",
-            password = "password123",
-            pin = "1234",
-            accountId = "00000000-0000-0000-0000-000000000001",
-        ),
-    )
+    private fun makeClient() =
+        HyundaiCanadaClient(
+            ApiClientConfig(
+                region = Region.CANADA,
+                brand = Brand.HYUNDAI,
+                username = "test@example.com",
+                password = "password123",
+                pin = "1234",
+                accountId = "00000000-0000-0000-0000-000000000001",
+            ),
+        )
 
     private fun json(raw: String): JsonObject = Json.parseToJsonElement(raw) as JsonObject
 
-    private fun makeVehicle(fuelType: FuelType) = Vehicle(
-        vin = "TESTVIN0000000000",
-        regId = "reg",
-        model = "PALISADE",
-        accountId = "00000000-0000-0000-0000-000000000002",
-        fuelType = fuelType,
-        generation = 2,
-        odometer = Distance(0.0, Distance.Units.KILOMETERS),
-    )
+    private fun makeVehicle(fuelType: FuelType) =
+        Vehicle(
+            vin = "TESTVIN0000000000",
+            regId = "reg",
+            model = "PALISADE",
+            accountId = "00000000-0000-0000-0000-000000000002",
+            fuelType = fuelType,
+            generation = 2,
+            odometer = Distance(0.0, Distance.Units.KILOMETERS),
+        )
 
     // Fuel type detection
 
@@ -52,9 +53,10 @@ class HyundaiCanadaParsingTest {
      */
     @Test
     fun `fuelKindCode G is detected as gas not electric`() {
-        val vehicleData = json(
-            """{"fuelKindCode": "G", "genType": "G1", "mainBatteryType": false, "modelName": "PALISADE"}""",
-        )
+        val vehicleData =
+            json(
+                """{"fuelKindCode": "G", "genType": "G1", "mainBatteryType": false, "modelName": "PALISADE"}""",
+            )
         assertEquals(FuelType.GAS, makeClient().detectFuelType(vehicleData))
     }
 

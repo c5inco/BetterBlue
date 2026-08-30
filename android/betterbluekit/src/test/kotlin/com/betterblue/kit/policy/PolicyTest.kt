@@ -12,15 +12,15 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 
 class RetryPolicyTest {
-
     @Test
     fun `reauthentication fires only on session-invalidating errors`() {
-        val shouldReauth = setOf(
-            ApiErrorType.INVALID_CREDENTIALS,
-            ApiErrorType.INVALID_VEHICLE_SESSION,
-            ApiErrorType.FAILED_RETRY_LOGIN,
-            ApiErrorType.KIA_INVALID_REQUEST,
-        )
+        val shouldReauth =
+            setOf(
+                ApiErrorType.INVALID_CREDENTIALS,
+                ApiErrorType.INVALID_VEHICLE_SESSION,
+                ApiErrorType.FAILED_RETRY_LOGIN,
+                ApiErrorType.KIA_INVALID_REQUEST,
+            )
         // Exhaustive over the taxonomy: a new error type must be classified
         // deliberately rather than inheriting a default.
         for (type in ApiErrorType.entries) {
@@ -75,7 +75,6 @@ class RetryPolicyTest {
 }
 
 class FuelTypeInferenceTest {
-
     private fun status(
         ev: VehicleStatus.EvStatus? = null,
         gas: VehicleStatus.FuelRange? = null,
@@ -85,19 +84,21 @@ class FuelTypeInferenceTest {
         gasRange = gas,
         location = VehicleStatus.Location(0.0, 0.0),
         lockStatus = VehicleStatus.LockStatus.LOCKED,
-        climateStatus = VehicleStatus.ClimateStatus(
-            defrostOn = false,
-            airControlOn = false,
-            steeringWheelHeatingOn = false,
-            temperature = Temperature(Temperature.Units.FAHRENHEIT, 70.0),
-        ),
+        climateStatus =
+            VehicleStatus.ClimateStatus(
+                defrostOn = false,
+                airControlOn = false,
+                steeringWheelHeatingOn = false,
+                temperature = Temperature(Temperature.Units.FAHRENHEIT, 70.0),
+            ),
     )
 
-    private val evStatus = VehicleStatus.EvStatus(
-        charging = false,
-        chargeSpeed = 0.0,
-        evRange = VehicleStatus.FuelRange(Distance(200.0, Distance.Units.MILES), 80.0),
-    )
+    private val evStatus =
+        VehicleStatus.EvStatus(
+            charging = false,
+            chargeSpeed = 0.0,
+            evRange = VehicleStatus.FuelRange(Distance(200.0, Distance.Units.MILES), 80.0),
+        )
 
     private val gasRange = VehicleStatus.FuelRange(Distance(300.0, Distance.Units.MILES), 50.0)
 

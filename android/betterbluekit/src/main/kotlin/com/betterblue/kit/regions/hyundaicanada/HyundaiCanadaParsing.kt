@@ -18,10 +18,12 @@ import java.time.Instant
 internal fun HyundaiCanadaClient.parseCanadaLoginResponse(data: ByteArray): AuthToken {
     val json = parseCanadaResponse(data, context = "login")
     val result = json["result"] as? JsonObject
-    val token = result?.get("token") as? JsonObject
-        ?: throw ApiException.logError("Invalid Canada login response", apiName = apiName)
-    val accessToken = token["accessToken"].asStringOrNull()
-        ?: throw ApiException.logError("Invalid Canada login response", apiName = apiName)
+    val token =
+        result?.get("token") as? JsonObject
+            ?: throw ApiException.logError("Invalid Canada login response", apiName = apiName)
+    val accessToken =
+        token["accessToken"].asStringOrNull()
+            ?: throw ApiException.logError("Invalid Canada login response", apiName = apiName)
 
     val expiresIn = token["expireIn"].asIntOrNull() ?: 3600
     val refreshToken = token["refreshToken"].asStringOrNull() ?: ""
@@ -36,31 +38,36 @@ internal fun HyundaiCanadaClient.parseCanadaLoginResponse(data: ByteArray): Auth
 internal fun HyundaiCanadaClient.parseCanadaVehiclesResponse(data: ByteArray): List<Vehicle> {
     val json = parseCanadaResponse(data, context = "vehicles")
     val result = json["result"] as? JsonObject
-    val vehicles = result?.get("vehicles") as? JsonArray
-        ?: throw ApiException.logError("Invalid Canada vehicles response", apiName = apiName)
+    val vehicles =
+        result?.get("vehicles") as? JsonArray
+            ?: throw ApiException.logError("Invalid Canada vehicles response", apiName = apiName)
 
     return vehicles.mapNotNull { element ->
         val vehicleData = element as? JsonObject ?: return@mapNotNull null
         val vin = vehicleData["vin"].asStringOrNull() ?: return@mapNotNull null
 
-        val regId = vehicleData["vehicleId"].asStringOrNull()
-            ?: vehicleData["regid"].asStringOrNull()
-            ?: vehicleData["registrationId"].asStringOrNull()
-            ?: vin
+        val regId =
+            vehicleData["vehicleId"].asStringOrNull()
+                ?: vehicleData["regid"].asStringOrNull()
+                ?: vehicleData["registrationId"].asStringOrNull()
+                ?: vin
 
-        val nickname = vehicleData["nickName"].asStringOrNull()
-            ?: vehicleData["modelName"].asStringOrNull()
-            ?: vehicleData["model"].asStringOrNull()
-            ?: vin
+        val nickname =
+            vehicleData["nickName"].asStringOrNull()
+                ?: vehicleData["modelName"].asStringOrNull()
+                ?: vehicleData["model"].asStringOrNull()
+                ?: vin
 
-        val generation = vehicleData["vehicleGeneration"].asIntOrNull()
-            ?: vehicleData["genType"].asIntOrNull()
-            ?: 3
+        val generation =
+            vehicleData["vehicleGeneration"].asIntOrNull()
+                ?: vehicleData["genType"].asIntOrNull()
+                ?: 3
 
         val odometerObject = vehicleData["odometer"] as? JsonObject
-        val odometerValue = vehicleData["odometer"].asDoubleOrNull()
-            ?: odometerObject?.get("value").asDoubleOrNull()
-            ?: 0.0
+        val odometerValue =
+            vehicleData["odometer"].asDoubleOrNull()
+                ?: odometerObject?.get("value").asDoubleOrNull()
+                ?: 0.0
 
         Vehicle(
             vin = vin,
@@ -76,21 +83,24 @@ internal fun HyundaiCanadaClient.parseCanadaVehiclesResponse(data: ByteArray): L
 
 internal fun HyundaiCanadaClient.parseCanadaVehicleStatusResponse(data: ByteArray, vehicle: Vehicle): VehicleStatus {
     val json = parseCanadaResponse(data, context = "status")
-    val result = json["result"] as? JsonObject
-        ?: throw ApiException.logError("Invalid Canada status response", apiName = apiName)
+    val result =
+        json["result"] as? JsonObject
+            ?: throw ApiException.logError("Invalid Canada status response", apiName = apiName)
 
-    val statusData = result["status"] as? JsonObject
-        ?: result["vehicleStatus"] as? JsonObject
-        ?: JsonObject(emptyMap())
+    val statusData =
+        result["status"] as? JsonObject
+            ?: result["vehicleStatus"] as? JsonObject
+            ?: JsonObject(emptyMap())
 
     val vehicleData = result["vehicle"] as? JsonObject ?: JsonObject(emptyMap())
     val statusOdometer = statusData["odometer"] as? JsonObject
     val vehicleOdometer = vehicleData["odometer"] as? JsonObject
 
-    val odometerValue = statusData["odometer"].asDoubleOrNull()
-        ?: statusOdometer?.get("value").asDoubleOrNull()
-        ?: vehicleData["odometer"].asDoubleOrNull()
-        ?: vehicleOdometer?.get("value").asDoubleOrNull()
+    val odometerValue =
+        statusData["odometer"].asDoubleOrNull()
+            ?: statusOdometer?.get("value").asDoubleOrNull()
+            ?: vehicleData["odometer"].asDoubleOrNull()
+            ?: vehicleOdometer?.get("value").asDoubleOrNull()
     val odometer = odometerValue?.let { Distance(it, Distance.Units.KILOMETERS) } ?: vehicle.odometer
 
     // Additional Canada-only boolean flags.
@@ -137,8 +147,9 @@ internal fun HyundaiCanadaClient.parseCommandAuthResponse(data: ByteArray): Stri
 
 internal fun HyundaiCanadaClient.parseCanadaLocationResponse(data: ByteArray): VehicleStatus.Location {
     val json = parseCanadaResponse(data, context = "location")
-    val result = json["result"] as? JsonObject
-        ?: throw ApiException.logError("Invalid Canada location response", apiName = apiName)
+    val result =
+        json["result"] as? JsonObject
+            ?: throw ApiException.logError("Invalid Canada location response", apiName = apiName)
 
     // Three shapes seen from this API: `result.gpsDetail.coord`, `result.coord`
     // (BetterBlueKit#36), and the flat `gpsDetail.coordLat` / `coordLon` pair

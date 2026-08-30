@@ -49,12 +49,13 @@ internal suspend fun HyundaiUsaClient.requestSurroundViewCaptureImpl(vehicle: Ve
             url = "$baseUrl/ac/v2/svm/findMyCarSVM",
             method = HttpMethod.POST,
             headers = authorizedHeaders(authToken, vehicle),
-            body = buildJsonObject {
-                put("vin", vehicle.vin)
-                put("username", username)
-                put("gen", vehicle.generation.toString())
-                put("blueLinkServicePin", pin)
-            },
+            body =
+                buildJsonObject {
+                    put("vin", vehicle.vin)
+                    put("username", username)
+                    put("gen", vehicle.generation.toString())
+                    put("blueLinkServicePin", pin)
+                },
             requestType = HttpRequestType.REQUEST_SURROUND_VIEW,
             vin = vehicle.vin,
         )
@@ -76,13 +77,14 @@ internal suspend fun HyundaiUsaClient.fetchSurroundViewCapturesImpl(
     vehicle: Vehicle,
     authToken: AuthToken,
 ): List<SurroundViewCapture> {
-    val result = performRequest(
-        url = "$baseUrl/ac/v2/svm/getSVMDetails",
-        method = HttpMethod.GET,
-        headers = authorizedHeaders(authToken, vehicle),
-        requestType = HttpRequestType.FETCH_SURROUND_VIEW,
-        vin = vehicle.vin,
-    )
+    val result =
+        performRequest(
+            url = "$baseUrl/ac/v2/svm/getSVMDetails",
+            method = HttpMethod.GET,
+            headers = authorizedHeaders(authToken, vehicle),
+            requestType = HttpRequestType.FETCH_SURROUND_VIEW,
+            vin = vehicle.vin,
+        )
 
     return parseUsaSurroundViewResponse(result.body, vehicle)
 }
@@ -92,13 +94,15 @@ internal fun HyundaiUsaClient.parseUsaSurroundViewResponse(
     vehicle: Vehicle,
 ): List<SurroundViewCapture> {
     val json = ApiClientBase.parseJsonObject(data)
-    val details = json["svmDetails"] as? JsonArray
-        ?: throw ApiException.logError("Invalid Hyundai USA surround view response", apiName = apiName)
+    val details =
+        json["svmDetails"] as? JsonArray
+            ?: throw ApiException.logError("Invalid Hyundai USA surround view response", apiName = apiName)
 
-    val captures = details.mapNotNull { entry ->
-        val detail = (entry as? JsonObject)?.get("svmDetail") as? JsonObject ?: return@mapNotNull null
-        parseUsaSurroundViewDetail(detail, vehicle)
-    }
+    val captures =
+        details.mapNotNull { entry ->
+            val detail = (entry as? JsonObject)?.get("svmDetail") as? JsonObject ?: return@mapNotNull null
+            parseUsaSurroundViewDetail(detail, vehicle)
+        }
 
     // Newest first. Observed in that order already, but nothing documents the
     // guarantee.
@@ -110,13 +114,14 @@ private fun HyundaiUsaClient.parseUsaSurroundViewDetail(
     vehicle: Vehicle,
 ): SurroundViewCapture? {
     val encodedImage = detail["svmImage"].asStringOrNull()
-    val imageData = encodedImage?.let {
-        try {
-            Base64.getMimeDecoder().decode(it)
-        } catch (_: IllegalArgumentException) {
-            null
+    val imageData =
+        encodedImage?.let {
+            try {
+                Base64.getMimeDecoder().decode(it)
+            } catch (_: IllegalArgumentException) {
+                null
+            }
         }
-    }
     if (imageData == null) {
         BBLogger.debug(BBLogCategory.API, "HyundaiUSA: skipping surround view entry without decodable image")
         return null

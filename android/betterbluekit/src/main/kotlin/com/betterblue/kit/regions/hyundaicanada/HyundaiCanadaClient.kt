@@ -22,8 +22,10 @@ import java.time.Duration
 import java.time.Instant
 import java.util.UUID
 
-class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
-
+class HyundaiCanadaClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config),
+    ApiClient {
     internal val clientId = "HATAHSPACA0232141ED9722C67715A0B"
     internal val clientSecret = "CLISCR01AHSPA"
 
@@ -127,16 +129,18 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
         val loginHeaders = headers() + ("Cookie" to cookie)
 
-        val (_, result) = performJsonRequest(
-            url = "$apiBaseUrl/v2/login",
-            method = HttpMethod.POST,
-            headers = loginHeaders,
-            body = buildJsonObject {
-                put("loginId", username)
-                put("password", password)
-            },
-            requestType = HttpRequestType.LOGIN,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "$apiBaseUrl/v2/login",
+                method = HttpMethod.POST,
+                headers = loginHeaders,
+                body =
+                    buildJsonObject {
+                        put("loginId", username)
+                        put("password", password)
+                    },
+                requestType = HttpRequestType.LOGIN,
+            )
 
         // Intercept the OTP-required response (errorCode 7110) before the
         // generic parser runs — it would otherwise throw a generic "Canada
@@ -154,12 +158,13 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
     override suspend fun fetchVehicles(authToken: AuthToken): List<Vehicle> {
         ensureCloudFlareCookie()
 
-        val (_, result) = performJsonRequest(
-            url = "$apiBaseUrl/vhcllst",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken),
-            requestType = HttpRequestType.FETCH_VEHICLES,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "$apiBaseUrl/vhcllst",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken),
+                requestType = HttpRequestType.FETCH_VEHICLES,
+            )
 
         return parseCanadaVehiclesResponse(result.body)
     }
@@ -170,21 +175,23 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         ensureCloudFlareCookie()
 
         val statusEndpoint = if (cached) "sltvhcl" else "rltmvhclsts"
-        val (_, primaryResult) = performJsonRequest(
-            url = "$apiBaseUrl/$statusEndpoint",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, vehicleId = vehicle.regId),
-            body = buildJsonObject { put("vehicleId", vehicle.regId) },
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val (_, primaryResult) =
+            performJsonRequest(
+                url = "$apiBaseUrl/$statusEndpoint",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, vehicleId = vehicle.regId),
+                body = buildJsonObject { put("vehicleId", vehicle.regId) },
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
         val primaryData = primaryResult.body
 
-        val statusData = if (cached) {
-            primaryData
-        } else {
-            fetchRealtimeStatusData(primaryData, vehicle, authToken)
-        }
+        val statusData =
+            if (cached) {
+                primaryData
+            } else {
+                fetchRealtimeStatusData(primaryData, vehicle, authToken)
+            }
         val finalData = injectLocationCoordinates(statusData, vehicle, authToken)
 
         return try {
@@ -200,20 +207,22 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         primaryData: ByteArray,
         vehicle: Vehicle,
         authToken: AuthToken,
-    ): ByteArray = try {
-        val (_, cachedResult) = performJsonRequest(
-            url = "$apiBaseUrl/sltvhcl",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, vehicleId = vehicle.regId),
-            body = buildJsonObject { put("vehicleId", vehicle.regId) },
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
-        cachedResult.body
-    } catch (error: Exception) {
-        BBLogger.debug(BBLogCategory.API, "HyundaiCanada: failed fetching sltvhcl: $error")
-        primaryData
-    }
+    ): ByteArray =
+        try {
+            val (_, cachedResult) =
+                performJsonRequest(
+                    url = "$apiBaseUrl/sltvhcl",
+                    method = HttpMethod.POST,
+                    headers = authorizedHeaders(authToken, vehicleId = vehicle.regId),
+                    body = buildJsonObject { put("vehicleId", vehicle.regId) },
+                    requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                    vin = vehicle.vin,
+                )
+            cachedResult.body
+        } catch (error: Exception) {
+            BBLogger.debug(BBLogCategory.API, "HyundaiCanada: failed fetching sltvhcl: $error")
+            primaryData
+        }
 
     override suspend fun sendCommand(vehicle: Vehicle, command: VehicleCommand, authToken: AuthToken) {
         ensureCloudFlareCookie()
@@ -227,13 +236,14 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
     /** PIN → pAuth exchange; every command request carries the resulting code. */
     internal suspend fun fetchCommandAuthCode(authToken: AuthToken): String {
-        val (_, result) = performJsonRequest(
-            url = "$apiBaseUrl/vrfypin",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken),
-            body = buildJsonObject { put("pin", pin) },
-            requestType = HttpRequestType.SEND_COMMAND,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "$apiBaseUrl/vrfypin",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken),
+                body = buildJsonObject { put("pin", pin) },
+                requestType = HttpRequestType.SEND_COMMAND,
+            )
 
         return parseCommandAuthResponse(result.body)
     }
@@ -266,14 +276,15 @@ class HyundaiCanadaClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         authCode: String,
         useRemoteControl: Boolean,
     ) {
-        val (_, result) = performJsonRequest(
-            url = "$apiBaseUrl/${commandPath(command)}",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, vehicleId = vehicle.regId, pAuth = authCode),
-            body = makeCommandBody(command, useRemoteControl),
-            requestType = HttpRequestType.SEND_COMMAND,
-            vin = vehicle.vin,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "$apiBaseUrl/${commandPath(command)}",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, vehicleId = vehicle.regId, pAuth = authCode),
+                body = makeCommandBody(command, useRemoteControl),
+                requestType = HttpRequestType.SEND_COMMAND,
+                vin = vehicle.vin,
+            )
 
         validateCommandResponse(result.body, context = "command")
     }

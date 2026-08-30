@@ -32,8 +32,10 @@ import java.util.UUID
  * which integrates a headless IDPConnect login flow and drops curl_cffi by
  * appending `_CCS_APP_AOS` to the User-Agent.
  */
-class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
-
+class KiaEuropeClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config),
+    ApiClient {
     internal var commandToken: String = ""
     internal var commandTokenExpiration: Instant = Instant.now()
 
@@ -57,18 +59,19 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
         val refreshToken = config.refreshToken
         if (!refreshToken.isNullOrEmpty()) {
             BBLogger.info(BBLogCategory.AUTH, "KiaEurope: Starting login flow (refresh token)")
-            val token = try {
-                getAccessTokenFromRefreshToken()
-            } catch (e: ApiException) {
-                // Dead refresh token → clear it and recurse into the
-                // username/password flow (the recursion takes the else-branch
-                // because the stored token is now empty).
-                if (e.errorType == ApiErrorType.INVALID_CREDENTIALS && password.isNotEmpty()) {
-                    config = config.copy(refreshToken = "")
-                    return login()
+            val token =
+                try {
+                    getAccessTokenFromRefreshToken()
+                } catch (e: ApiException) {
+                    // Dead refresh token → clear it and recurse into the
+                    // username/password flow (the recursion takes the else-branch
+                    // because the stored token is now empty).
+                    if (e.errorType == ApiErrorType.INVALID_CREDENTIALS && password.isNotEmpty()) {
+                        config = config.copy(refreshToken = "")
+                        return login()
+                    }
+                    throw e
                 }
-                throw e
-            }
             BBLogger.info(BBLogCategory.AUTH, "KiaEurope: Login completed successfully")
             return token
         }
@@ -91,28 +94,32 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
 
     override suspend fun registerDevice(): String? {
         val stamp = generateStamp()
-        val (json, _) = performJsonRequest(
-            url = "$baseUrl/api/v1/spa/notifications/register",
-            method = HttpMethod.POST,
-            headers = mapOf(
-                "ccsp-service-id" to CLIENT_ID,
-                "ccsp-application-id" to APP_ID,
-                "Stamp" to stamp,
-                "Content-Type" to "application/json;charset=UTF-8",
-                "Host" to apiHost,
-                "User-Agent" to "okhttp/3.14.9",
-            ),
-            body = buildJsonObject {
-                put("pushRegId", stamp)
-                put("pushType", PUSH_TYPE)
-                put("uuid", UUID.randomUUID().toString().uppercase())
-            },
-            requestType = HttpRequestType.LOGIN,
-            validateResponse = false,
-        )
+        val (json, _) =
+            performJsonRequest(
+                url = "$baseUrl/api/v1/spa/notifications/register",
+                method = HttpMethod.POST,
+                headers =
+                    mapOf(
+                        "ccsp-service-id" to CLIENT_ID,
+                        "ccsp-application-id" to APP_ID,
+                        "Stamp" to stamp,
+                        "Content-Type" to "application/json;charset=UTF-8",
+                        "Host" to apiHost,
+                        "User-Agent" to "okhttp/3.14.9",
+                    ),
+                body =
+                    buildJsonObject {
+                        put("pushRegId", stamp)
+                        put("pushType", PUSH_TYPE)
+                        put("uuid", UUID.randomUUID().toString().uppercase())
+                    },
+                requestType = HttpRequestType.LOGIN,
+                validateResponse = false,
+            )
 
-        val deviceId = (json["resMsg"] as? JsonObject)?.get("deviceId").asStringOrNull()
-            ?: throw ApiException("Failed to get device id", apiName = apiName)
+        val deviceId =
+            (json["resMsg"] as? JsonObject)?.get("deviceId").asStringOrNull()
+                ?: throw ApiException("Failed to get device id", apiName = apiName)
         config = config.copy(deviceId = deviceId)
         return deviceId
     }
@@ -120,12 +127,13 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
     // Vehicles
 
     override suspend fun fetchVehicles(authToken: AuthToken): List<Vehicle> {
-        val result = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken),
-            requestType = HttpRequestType.FETCH_VEHICLES,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken),
+                requestType = HttpRequestType.FETCH_VEHICLES,
+            )
         return parseVehiclesResponse(result.body)
     }
 
@@ -142,21 +150,23 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
 
         val endpoint = if (ccs2) "/ccs2/carstatus/latest" else "/status/latest"
 
-        val statusResult = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}$endpoint",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val statusResult =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}$endpoint",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
-        val parkResult = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/location/park",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val parkResult =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/location/park",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
         return parseVehicleStatusResponse(statusResult.body, parkResult.body, vehicle)
     }
@@ -173,17 +183,19 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
             return
         }
 
-        val (json, _) = performJsonRequest(
-            url = "$baseUrl/api/v1/user/pin?token=",
-            method = HttpMethod.PUT,
-            headers = authorizedHeaders(authToken),
-            body = buildJsonObject {
-                put("deviceId", config.deviceId ?: "")
-                put("pin", pin)
-            },
-            requestType = HttpRequestType.SEND_COMMAND,
-            validateResponse = false,
-        )
+        val (json, _) =
+            performJsonRequest(
+                url = "$baseUrl/api/v1/user/pin?token=",
+                method = HttpMethod.PUT,
+                headers = authorizedHeaders(authToken),
+                body =
+                    buildJsonObject {
+                        put("deviceId", config.deviceId ?: "")
+                        put("pin", pin)
+                    },
+                requestType = HttpRequestType.SEND_COMMAND,
+                validateResponse = false,
+            )
 
         val token = json["controlToken"].asStringOrNull()
         val expires = json["expiresTime"].asIntOrNull()
@@ -223,12 +235,13 @@ class KiaEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClien
         val (path, body) = commandPathAndBody(command, ccs2 = ccs2, drvSeatLoc = drvSeatLoc)
         val url = "$baseUrl/api/${if (ccs2) "v2" else "v1"}/spa/vehicles/${vehicle.regId}/$path"
 
-        val headers = if (ccs2) {
-            setCommandToken(authToken)
-            commandHeaders(authToken, ccs2 = true)
-        } else {
-            authorizedHeaders(authToken, ccs2 = false)
-        }
+        val headers =
+            if (ccs2) {
+                setCommandToken(authToken)
+                commandHeaders(authToken, ccs2 = true)
+            } else {
+                authorizedHeaders(authToken, ccs2 = false)
+            }
 
         performJsonRequest(
             url = url,

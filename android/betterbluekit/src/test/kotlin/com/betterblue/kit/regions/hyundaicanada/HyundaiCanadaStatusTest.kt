@@ -20,31 +20,33 @@ import org.junit.jupiter.params.provider.CsvSource
  * suite covers only implicitly).
  */
 class HyundaiCanadaStatusTest {
+    private fun makeClient() =
+        HyundaiCanadaClient(
+            ApiClientConfig(
+                region = Region.CANADA,
+                brand = Brand.HYUNDAI,
+                username = "",
+                password = "",
+                pin = "",
+                accountId = "00000000-0000-0000-0000-000000000001",
+            ),
+        )
 
-    private fun makeClient() = HyundaiCanadaClient(
-        ApiClientConfig(
-            region = Region.CANADA,
-            brand = Brand.HYUNDAI,
-            username = "",
-            password = "",
-            pin = "",
-            accountId = "00000000-0000-0000-0000-000000000001",
-        ),
-    )
-
-    private fun makeVehicle() = Vehicle(
-        vin = "TESTVIN",
-        regId = "REG",
-        model = "MODEL",
-        accountId = "00000000-0000-0000-0000-000000000002",
-        fuelType = FuelType.GAS,
-        generation = 1,
-        odometer = Distance(0.0, Distance.Units.KILOMETERS),
-    )
+    private fun makeVehicle() =
+        Vehicle(
+            vin = "TESTVIN",
+            regId = "REG",
+            model = "MODEL",
+            accountId = "00000000-0000-0000-0000-000000000002",
+            fuelType = FuelType.GAS,
+            generation = 1,
+            odometer = Distance(0.0, Distance.Units.KILOMETERS),
+        )
 
     @Test
     fun `Canada status parsing includes engine acc and remote flags`() {
-        val data = """
+        val data =
+            """
             {
               "responseHeader": {"responseCode": 0},
               "result": {
@@ -69,7 +71,7 @@ class HyundaiCanadaStatusTest {
                 }
               }
             }
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val status = makeClient().parseCanadaVehicleStatusResponse(data, makeVehicle())
         assertEquals(true, status.engineOn)
@@ -82,14 +84,15 @@ class HyundaiCanadaStatusTest {
 
     @Test
     fun `Canada location response parsing reads fndmcr coordinates`() {
-        val data = """
+        val data =
+            """
             {
               "responseHeader": {"responseCode": 0},
               "result": {
                 "coord": {"lat": 43.6532, "lon": -79.3832}
               }
             }
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val location = makeClient().parseCanadaLocationResponse(data)
         assertEquals(43.6532, location.latitude)
@@ -98,7 +101,8 @@ class HyundaiCanadaStatusTest {
 
     @Test
     fun `Canada status parsing uses injected vehicle location coordinates`() {
-        val data = """
+        val data =
+            """
             {
               "responseHeader": {"responseCode": 0},
               "result": {
@@ -115,7 +119,7 @@ class HyundaiCanadaStatusTest {
                 }
               }
             }
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val status = makeClient().parseCanadaVehicleStatusResponse(data, makeVehicle())
         assertEquals(43.6532, status.location.latitude)

@@ -53,13 +53,14 @@ internal suspend fun HyundaiCanadaClient.fetchSurroundViewCapturesImpl(
     ensureCloudFlareCookie()
     val authCode = fetchCommandAuthCode(authToken)
 
-    val data = performSurroundViewRequest(
-        path = "rfc/lastmcrsvm",
-        vehicle = vehicle,
-        authToken = authToken,
-        authCode = authCode,
-        requestType = HttpRequestType.FETCH_SURROUND_VIEW,
-    )
+    val data =
+        performSurroundViewRequest(
+            path = "rfc/lastmcrsvm",
+            vehicle = vehicle,
+            authToken = authToken,
+            authCode = authCode,
+            requestType = HttpRequestType.FETCH_SURROUND_VIEW,
+        )
 
     return parseCanadaSurroundViewResponse(data, vehicle)
 }
@@ -94,11 +95,12 @@ private suspend fun HyundaiCanadaClient.performSurroundViewRequest(
 ): ByteArray {
     val native = locationHeaders(authToken, vehicleId = vehicle.regId, pAuth = authCode)
     val account = authorizedHeaders(authToken, vehicleId = vehicle.regId, pAuth = authCode)
-    val ordered = if (locationStrategy == LocationStrategy.FIND_MY_CAR_ACCOUNT) {
-        listOf(account, native)
-    } else {
-        listOf(native, account)
-    }
+    val ordered =
+        if (locationStrategy == LocationStrategy.FIND_MY_CAR_ACCOUNT) {
+            listOf(account, native)
+        } else {
+            listOf(native, account)
+        }
 
     var firstError: Exception? = null
     for (requestHeaders in ordered) {
@@ -122,14 +124,15 @@ private suspend fun HyundaiCanadaClient.sendSurroundViewRequest(
     requestHeaders: Map<String, String>,
     requestType: HttpRequestType,
 ): ByteArray {
-    val (_, result) = performJsonRequest(
-        url = "$apiBaseUrl/$path",
-        method = HttpMethod.POST,
-        headers = requestHeaders,
-        body = buildJsonObject { put("pin", pin) },
-        requestType = requestType,
-        vin = vehicle.vin,
-    )
+    val (_, result) =
+        performJsonRequest(
+            url = "$apiBaseUrl/$path",
+            method = HttpMethod.POST,
+            headers = requestHeaders,
+            body = buildJsonObject { put("pin", pin) },
+            requestType = requestType,
+            vin = vehicle.vin,
+        )
 
     parseCanadaResponse(result.body, context = "surround view")
     return result.body
@@ -144,12 +147,14 @@ internal fun HyundaiCanadaClient.parseCanadaSurroundViewResponse(
     val json = parseCanadaResponse(data, context = "surround view")
 
     val result = json["result"] as? JsonObject
-    val locations = result?.get("svmLocations") as? JsonArray
-        ?: throw ApiException.logError("Invalid Canada surround view response", apiName = apiName)
+    val locations =
+        result?.get("svmLocations") as? JsonArray
+            ?: throw ApiException.logError("Invalid Canada surround view response", apiName = apiName)
 
-    val captures = locations.mapNotNull { entry ->
-        (entry as? JsonObject)?.let { parseSurroundViewLocation(it, vehicle) }
-    }
+    val captures =
+        locations.mapNotNull { entry ->
+            (entry as? JsonObject)?.let { parseSurroundViewLocation(it, vehicle) }
+        }
 
     // Newest first. The server has been observed returning them in that order
     // already, but nothing documents that guarantee.
@@ -158,15 +163,16 @@ internal fun HyundaiCanadaClient.parseCanadaSurroundViewResponse(
 
 private fun parseSurroundViewLocation(location: JsonObject, vehicle: Vehicle): SurroundViewCapture? {
     val encodedImage = location["svmImage"].asStringOrNull()
-    val imageData = encodedImage?.let {
-        try {
-            // MIME decoder skips unknown characters, matching Swift's
-            // `.ignoreUnknownCharacters` decode option.
-            Base64.getMimeDecoder().decode(it)
-        } catch (_: IllegalArgumentException) {
-            null
+    val imageData =
+        encodedImage?.let {
+            try {
+                // MIME decoder skips unknown characters, matching Swift's
+                // `.ignoreUnknownCharacters` decode option.
+                Base64.getMimeDecoder().decode(it)
+            } catch (_: IllegalArgumentException) {
+                null
+            }
         }
-    }
     if (imageData == null) {
         BBLogger.debug(BBLogCategory.API, "HyundaiCanada: skipping surround view entry without decodable image")
         return null

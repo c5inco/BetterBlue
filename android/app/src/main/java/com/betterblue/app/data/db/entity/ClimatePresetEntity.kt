@@ -30,12 +30,13 @@ data class ClimatePresetEntity(
 
 /** Icons offered by the preset editor (Material icon keys). */
 object ClimatePresetIcons {
-    val available: List<Pair<String, String>> = listOf(
-        "fan" to "Fan",
-        "thermometer" to "Thermometer",
-        "snowflake" to "Snowflake",
-        "sun" to "Sun",
-        "wind" to "Wind",
-        "cloud_snow" to "Snow",
-    )
+    val available: List<Pair<String, String>> =
+        listOf(
+            "fan" to "Fan",
+            "thermometer" to "Thermometer",
+            "snowflake" to "Snowflake",
+            "sun" to "Sun",
+            "wind" to "Wind",
+            "cloud_snow" to "Snow",
+        )
 }

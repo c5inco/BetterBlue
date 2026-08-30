@@ -31,18 +31,21 @@ class HttpResult(
 }
 
 /** Suspends until the call completes; cancelling the coroutine cancels the call. */
-suspend fun Call.await(): Response = suspendCancellableCoroutine { continuation ->
-    enqueue(object : Callback {
-        override fun onResponse(call: Call, response: Response) {
-            continuation.resume(response)
-        }
+suspend fun Call.await(): Response =
+    suspendCancellableCoroutine { continuation ->
+        enqueue(
+            object : Callback {
+                override fun onResponse(call: Call, response: Response) {
+                    continuation.resume(response)
+                }
 
-        override fun onFailure(call: Call, e: IOException) {
-            if (!continuation.isCancelled) continuation.resumeWithException(e)
-        }
-    })
-    continuation.invokeOnCancellation { cancel() }
-}
+                override fun onFailure(call: Call, e: IOException) {
+                    if (!continuation.isCancelled) continuation.resumeWithException(e)
+                }
+            },
+        )
+        continuation.invokeOnCancellation { cancel() }
+    }
 
 /**
  * A minimal in-memory cookie jar, private to one API client instance. The EU
@@ -75,9 +78,13 @@ class InMemoryCookieJar : CookieJar {
     }
 
     /** All stored cookies for a domain, regardless of path — used by the Cloudflare handshake. */
-    fun cookiesForDomain(domain: String): List<Cookie> = synchronized(lock) {
-        store.entries.filter { domain.endsWith(it.key) }.flatMap { it.value }.toList()
-    }
+    fun cookiesForDomain(domain: String): List<Cookie> =
+        synchronized(lock) {
+            store.entries
+                .filter { domain.endsWith(it.key) }
+                .flatMap { it.value }
+                .toList()
+        }
 
     fun clear() = synchronized(lock) { store.clear() }
 }

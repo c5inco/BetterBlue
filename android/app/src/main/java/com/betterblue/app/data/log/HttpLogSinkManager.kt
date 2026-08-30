@@ -19,34 +19,37 @@ import javax.inject.Singleton
  * same policy as the iOS HTTPLogSinkManager.
  */
 @Singleton
-class HttpLogSinkManager @Inject constructor(
-    private val httpLogDao: HttpLogDao,
-    private val settings: AppSettings,
-    @AppScope private val scope: CoroutineScope,
-) {
-    fun createLogSink(deviceType: DeviceType = DeviceType.PHONE): HttpLogSink = HttpLogSink { log ->
-        scope.launch {
-            try {
-                if (!settings.isDebugModeEnabled()) return@launch
-                httpLogDao.insertCapped(
-                    HttpLogEntity(
-                        timestamp = log.timestamp.toEpochMilli(),
-                        accountId = log.accountId,
-                        vin = log.vin,
-                        requestType = log.requestType.name,
-                        responseStatus = log.responseStatus,
-                        isSuccess = log.isSuccess,
-                        deviceType = deviceType,
-                        log = log,
-                    ),
-                )
-            } catch (e: Exception) {
-                BBLogger.warning(BBLogCategory.API, "HttpLogSinkManager: failed to persist log: $e")
+class HttpLogSinkManager
+    @Inject
+    constructor(
+        private val httpLogDao: HttpLogDao,
+        private val settings: AppSettings,
+        @AppScope private val scope: CoroutineScope,
+    ) {
+        fun createLogSink(deviceType: DeviceType = DeviceType.PHONE): HttpLogSink =
+            HttpLogSink { log ->
+                scope.launch {
+                    try {
+                        if (!settings.isDebugModeEnabled()) return@launch
+                        httpLogDao.insertCapped(
+                            HttpLogEntity(
+                                timestamp = log.timestamp.toEpochMilli(),
+                                accountId = log.accountId,
+                                vin = log.vin,
+                                requestType = log.requestType.name,
+                                responseStatus = log.responseStatus,
+                                isSuccess = log.isSuccess,
+                                deviceType = deviceType,
+                                log = log,
+                            ),
+                        )
+                    } catch (e: Exception) {
+                        BBLogger.warning(BBLogCategory.API, "HttpLogSinkManager: failed to persist log: $e")
+                    }
+                }
             }
-        }
+
+        fun observeLogs() = httpLogDao.observeAll()
+
+        suspend fun clearLogs() = httpLogDao.deleteAll()
     }
-
-    fun observeLogs() = httpLogDao.observeAll()
-
-    suspend fun clearLogs() = httpLogDao.deleteAll()
-}

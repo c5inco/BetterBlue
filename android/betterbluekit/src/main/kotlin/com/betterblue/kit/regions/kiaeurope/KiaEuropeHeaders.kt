@@ -22,20 +22,21 @@ import javax.crypto.Cipher
 internal fun KiaEuropeClient.authorizedHeaders(
     authToken: AuthToken,
     ccs2: Boolean = false,
-): Map<String, String> = mapOf(
-    "Authorization" to "Bearer ${authToken.accessToken}",
-    "Content-Type" to "application/json",
-    "Accept" to "application/json",
-    "User-Agent" to "okhttp/3.14.9",
-    "ccsp-service-id" to KiaEuropeClient.CLIENT_ID,
-    "ccsp-application-id" to KiaEuropeClient.APP_ID,
-    "ccsp-device-id" to (config.deviceId ?: ""),
-    "Ccuccs2protocolsupport" to if (ccs2) "1" else "0",
-    "Host" to apiHost,
-    // Fresh stamp per request — the server validates the embedded timestamp
-    // window (see CcspStamp; the prior HMAC form 403'd on control endpoints).
-    "Stamp" to generateStamp(),
-)
+): Map<String, String> =
+    mapOf(
+        "Authorization" to "Bearer ${authToken.accessToken}",
+        "Content-Type" to "application/json",
+        "Accept" to "application/json",
+        "User-Agent" to "okhttp/3.14.9",
+        "ccsp-service-id" to KiaEuropeClient.CLIENT_ID,
+        "ccsp-application-id" to KiaEuropeClient.APP_ID,
+        "ccsp-device-id" to (config.deviceId ?: ""),
+        "Ccuccs2protocolsupport" to if (ccs2) "1" else "0",
+        "Host" to apiHost,
+        // Fresh stamp per request — the server validates the embedded timestamp
+        // window (see CcspStamp; the prior HMAC form 403'd on control endpoints).
+        "Stamp" to generateStamp(),
+    )
 
 /**
  * Command headers: the plain Authorization is replaced by the PIN-derived
@@ -44,10 +45,12 @@ internal fun KiaEuropeClient.authorizedHeaders(
 internal fun KiaEuropeClient.commandHeaders(
     authToken: AuthToken,
     ccs2: Boolean = false,
-): Map<String, String> = authorizedHeaders(authToken, ccs2) + mapOf(
-    "Authorization" to "Bearer $commandToken",
-    "AuthorizationCCSP" to "Bearer $commandToken",
-)
+): Map<String, String> =
+    authorizedHeaders(authToken, ccs2) +
+        mapOf(
+            "Authorization" to "Bearer $commandToken",
+            "AuthorizationCCSP" to "Bearer $commandToken",
+        )
 
 internal fun KiaEuropeClient.generateStamp(): String =
     CcspStamp.generateStamp(KiaEuropeClient.APP_ID, KiaEuropeClient.AUTH_CFB)
@@ -71,27 +74,31 @@ internal fun rsaEncryptPkcs1(
     if (nBytes == null || eBytes == null) {
         throw ApiException("Invalid base64url in JWK", apiName = apiName)
     }
-    val encrypted = try {
-        val publicKey = KeyFactory.getInstance("RSA").generatePublic(
-            RSAPublicKeySpec(BigInteger(1, nBytes), BigInteger(1, eBytes)),
-        )
-        Cipher.getInstance("RSA/ECB/PKCS1Padding")
-            .apply { init(Cipher.ENCRYPT_MODE, publicKey) }
-            .doFinal(password.toByteArray(Charsets.UTF_8))
-    } catch (e: Exception) {
-        throw ApiException("RSA encryption failed: ${e.message ?: e}", apiName = apiName, cause = e)
-    }
+    val encrypted =
+        try {
+            val publicKey =
+                KeyFactory.getInstance("RSA").generatePublic(
+                    RSAPublicKeySpec(BigInteger(1, nBytes), BigInteger(1, eBytes)),
+                )
+            Cipher
+                .getInstance("RSA/ECB/PKCS1Padding")
+                .apply { init(Cipher.ENCRYPT_MODE, publicKey) }
+                .doFinal(password.toByteArray(Charsets.UTF_8))
+        } catch (e: Exception) {
+            throw ApiException("RSA encryption failed: ${e.message ?: e}", apiName = apiName, cause = e)
+        }
     return encrypted.joinToString("") { "%02x".format(it) }
 }
 
 /** base64url → bytes, tolerating missing padding; null when unparseable. */
-internal fun base64UrlDecode(input: String): ByteArray? = try {
-    val normalized = input.replace('-', '+').replace('_', '/')
-    val padded = normalized + "=".repeat((4 - normalized.length % 4) % 4)
-    Base64.getDecoder().decode(padded)
-} catch (_: IllegalArgumentException) {
-    null
-}
+internal fun base64UrlDecode(input: String): ByteArray? =
+    try {
+        val normalized = input.replace('-', '+').replace('_', '/')
+        val padded = normalized + "=".repeat((4 - normalized.length % 4) % 4)
+        Base64.getDecoder().decode(padded)
+    } catch (_: IllegalArgumentException) {
+        null
+    }
 
 /**
  * Form-encode key/value pairs preserving insertion order. Uses OkHttp's
@@ -100,8 +107,11 @@ internal fun base64UrlDecode(input: String): ByteArray? = try {
  * password hex string or an email address survives intact.
  */
 internal fun kiaFormEncode(fields: List<Pair<String, String>>): String {
-    val body = FormBody.Builder().apply {
-        for ((key, value) in fields) add(key, value)
-    }.build()
+    val body =
+        FormBody
+            .Builder()
+            .apply {
+                for ((key, value) in fields) add(key, value)
+            }.build()
     return Buffer().also { body.writeTo(it) }.readUtf8()
 }

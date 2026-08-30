@@ -27,14 +27,15 @@ internal fun KiaUsaClient.parseLoginResponse(data: ByteArray, headers: Headers):
 
     // Unlike the other parsers, a garbled login body is an error rather than
     // an empty object — the Swift client threw here too.
-    val json = try {
-        ApiClientBase.json.parseToJsonElement(data.toString(Charsets.UTF_8)) as? JsonObject
-    } catch (_: Exception) {
-        null
-    } ?: run {
-        BBLogger.error(BBLogCategory.AUTH, "KiaUSA: Failed to parse login response as JSON")
-        throw ApiException.logError("Failed to parse login response", apiName = apiName)
-    }
+    val json =
+        try {
+            ApiClientBase.json.parseToJsonElement(data.toString(Charsets.UTF_8)) as? JsonObject
+        } catch (_: Exception) {
+            null
+        } ?: run {
+            BBLogger.error(BBLogCategory.AUTH, "KiaUSA: Failed to parse login response as JSON")
+            throw ApiException.logError("Failed to parse login response", apiName = apiName)
+        }
 
     // Check for MFA requirement: an authUser body carrying payload.otpKey
     // means the server wants an OTP round-trip before it will mint a session.
@@ -71,8 +72,9 @@ internal fun KiaUsaClient.parseLoginResponse(data: ByteArray, headers: Headers):
 
     // The session id comes back in the `sid` RESPONSE HEADER — it doubles as
     // the access token for every authorized request.
-    val sessionId = headers["sid"]
-        ?: throw ApiException.logError("Login response missing session ID header", apiName = apiName)
+    val sessionId =
+        headers["sid"]
+            ?: throw ApiException.logError("Login response missing session ID header", apiName = apiName)
 
     // Match the Python `hyundai_kia_connect_api` reference, which uses
     // 23 hours. The previous 1-hour value forced ~23x more `authUser`
@@ -104,8 +106,9 @@ internal fun KiaUsaClient.parseVehiclesResponse(data: ByteArray): List<Vehicle> 
     checkForKiaErrors(data)
 
     val json = ApiClientBase.parseJsonObject(data)
-    val vehicleSummary = json["payload"].asObjectOrNull()?.get("vehicleSummary").asArrayOrNull()
-        ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
+    val vehicleSummary =
+        json["payload"].asObjectOrNull()?.get("vehicleSummary").asArrayOrNull()
+            ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
 
     return vehicleSummary.mapNotNull { element ->
         val entry = element.asObjectOrNull() ?: return@mapNotNull null
@@ -145,10 +148,11 @@ internal fun KiaUsaClient.parseVehiclesResponse(data: ByteArray): List<Vehicle> 
  * PHEV here, downstream status fetches that return both `evStatus`
  * and `gasRange` will still surface the gas range correctly.
  */
-internal fun kiaUsaFuelType(fuelType: Int): FuelType = when (fuelType) {
-    4 -> FuelType.ELECTRIC
-    else -> FuelType.GAS
-}
+internal fun kiaUsaFuelType(fuelType: Int): FuelType =
+    when (fuelType) {
+        4 -> FuelType.ELECTRIC
+        else -> FuelType.GAS
+    }
 
 internal fun KiaUsaClient.parseVehicleStatusResponse(data: ByteArray, vehicle: Vehicle): VehicleStatus {
     checkForKiaErrors(data)
@@ -175,16 +179,22 @@ internal fun KiaUsaClient.parseVehicleStatusResponse(data: ByteArray, vehicle: V
 
 private fun KiaUsaClient.extractLastVehicleInfo(data: ByteArray): JsonObject {
     val json = ApiClientBase.parseJsonObject(data)
-    return json["payload"].asObjectOrNull()
-        ?.get("vehicleInfoList").asArrayOrNull()
-        ?.firstOrNull().asObjectOrNull()
-        ?.get("lastVehicleInfo").asObjectOrNull()
+    return json["payload"]
+        .asObjectOrNull()
+        ?.get("vehicleInfoList")
+        .asArrayOrNull()
+        ?.firstOrNull()
+        .asObjectOrNull()
+        ?.get("lastVehicleInfo")
+        .asObjectOrNull()
         ?: throw ApiException.logError("Invalid vehicle status response", apiName = apiName)
 }
 
 private fun KiaUsaClient.extractVehicleStatus(lastVehicleInfo: JsonObject): JsonObject =
-    lastVehicleInfo["vehicleStatusRpt"].asObjectOrNull()
-        ?.get("vehicleStatus").asObjectOrNull()
+    lastVehicleInfo["vehicleStatusRpt"]
+        .asObjectOrNull()
+        ?.get("vehicleStatus")
+        .asObjectOrNull()
         ?: throw ApiException.logError("Invalid vehicle status response", apiName = apiName)
 
 private fun parseEvStatus(vehicleStatus: JsonObject): VehicleStatus.EvStatus? {
@@ -193,15 +203,26 @@ private fun parseEvStatus(vehicleStatus: JsonObject): VehicleStatus.EvStatus? {
     if (batteryStatus <= 0) return null
 
     val drvDistance = evStatusData["drvDistance"].asArrayOrNull()
-    val rangeInfo = drvDistance?.firstOrNull().asObjectOrNull()?.get("rangeByFuel").asObjectOrNull()
+    val rangeInfo =
+        drvDistance
+            ?.firstOrNull()
+            .asObjectOrNull()
+            ?.get("rangeByFuel")
+            .asObjectOrNull()
     val evModeRange = rangeInfo?.get("evModeRange").asObjectOrNull()
     val chargeTimes = evStatusData["remainChargeTime"].asArrayOrNull()
-    val chargeTime = chargeTimes?.firstOrNull().asObjectOrNull()?.get("value").asIntOrNull() ?: 0
+    val chargeTime =
+        chargeTimes
+            ?.firstOrNull()
+            .asObjectOrNull()
+            ?.get("value")
+            .asIntOrNull() ?: 0
 
-    val evRange = Distance(
-        length = evModeRange?.get("value").asDoubleOrNull() ?: 0.0,
-        units = Distance.Units.fromInt(evModeRange?.get("unit").asIntOrNull() ?: 3),
-    )
+    val evRange =
+        Distance(
+            length = evModeRange?.get("value").asDoubleOrNull() ?: 0.0,
+            units = Distance.Units.fromInt(evModeRange?.get("unit").asIntOrNull() ?: 3),
+        )
 
     val batteryPlugin = evStatusData["batteryPlugin"].asIntOrNull() ?: 0
 
@@ -223,10 +244,11 @@ private fun parseEvStatus(vehicleStatus: JsonObject): VehicleStatus.EvStatus? {
 
     return VehicleStatus.EvStatus(
         charging = evStatusData["batteryCharge"].asBooleanOrNull() ?: false,
-        chargeSpeed = maxOf(
-            evStatusData["batteryStndChrgPower"].asDoubleOrNull() ?: 0.0,
-            evStatusData["batteryFstChrgPower"].asDoubleOrNull() ?: 0.0,
-        ),
+        chargeSpeed =
+            maxOf(
+                evStatusData["batteryStndChrgPower"].asDoubleOrNull() ?: 0.0,
+                evStatusData["batteryFstChrgPower"].asDoubleOrNull() ?: 0.0,
+            ),
         evRange = VehicleStatus.FuelRange(range = evRange, percentage = batteryStatus),
         plugType = VehicleStatus.PlugType.fromBatteryPlugin(batteryPlugin),
         chargeTimeSeconds = 60L * chargeTime,
@@ -273,10 +295,11 @@ private fun parseClimateStatus(vehicleStatus: JsonObject): VehicleStatus.Climate
         defrostOn = climate?.get("defrost").asBooleanOrNull() ?: false,
         airControlOn = climate?.get("airCtrl").asBooleanOrNull() ?: false,
         steeringWheelHeatingOn = (heatingAccessory?.get("steeringWheel").asIntOrNull() ?: 0) != 0,
-        temperature = Temperature.fromApi(
-            units = airTemp?.get("unit").asIntOrNull(),
-            value = airTemp?.get("value").asStringOrNull(),
-        ),
+        temperature =
+            Temperature.fromApi(
+                units = airTemp?.get("unit").asIntOrNull(),
+                value = airTemp?.get("value").asStringOrNull(),
+            ),
     )
 }
 
@@ -300,15 +323,24 @@ private fun parseHoodTrunk(vehicleStatus: JsonObject): Pair<Boolean?, Boolean?> 
 }
 
 private fun parseBattery12V(vehicleStatus: JsonObject): Int? {
-    vehicleStatus["batteryStatus"].asObjectOrNull()?.get("stateOfCharge").asIntOrNull()?.let { return it }
-    vehicleStatus["battery"].asObjectOrNull()?.get("batSoc").asIntOrNull()?.let { return it }
+    vehicleStatus["batteryStatus"]
+        .asObjectOrNull()
+        ?.get("stateOfCharge")
+        .asIntOrNull()
+        ?.let { return it }
+    vehicleStatus["battery"]
+        .asObjectOrNull()
+        ?.get("batSoc")
+        .asIntOrNull()
+        ?.let { return it }
     return null
 }
 
 private fun parseDoorOpen(vehicleStatus: JsonObject): VehicleStatus.DoorStatus? {
-    val doorData = vehicleStatus["doorStatus"].asObjectOrNull()
-        ?: vehicleStatus["doorOpen"].asObjectOrNull()
-        ?: return null
+    val doorData =
+        vehicleStatus["doorStatus"].asObjectOrNull()
+            ?: vehicleStatus["doorOpen"].asObjectOrNull()
+            ?: return null
 
     return VehicleStatus.DoorStatus(
         frontLeft = (doorData["frontLeft"].asIntOrNull() ?: 0) != 0,
@@ -362,7 +394,7 @@ internal fun KiaUsaClient.checkForKiaErrors(data: ByteArray) {
         (
             messageLower.contains("valid email") || messageLower.contains("invalid") ||
                 messageLower.contains("credential")
-            )
+        )
     ) {
         throw ApiException.invalidCredentials("Invalid username or password", apiName = apiName)
     }
@@ -375,7 +407,7 @@ internal fun KiaUsaClient.checkForKiaErrors(data: ByteArray) {
         (
             messageLower.contains("session key") || messageLower.contains("invalid") ||
                 messageLower.contains("expired")
-            )
+        )
     ) {
         throw ApiException.invalidCredentials("Session Key is either invalid or expired", apiName = apiName)
     }

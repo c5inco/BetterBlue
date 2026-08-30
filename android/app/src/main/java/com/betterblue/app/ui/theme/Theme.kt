@@ -9,13 +9,15 @@ import androidx.compose.ui.graphics.Color
 
 private val BetterBluePrimary = Color(0xFF2F6FED)
 
-private val LightColors = lightColorScheme(
-    primary = BetterBluePrimary,
-)
+private val LightColors =
+    lightColorScheme(
+        primary = BetterBluePrimary,
+    )
 
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF8AB4F8),
-)
+private val DarkColors =
+    darkColorScheme(
+        primary = Color(0xFF8AB4F8),
+    )
 
 @Composable
 fun BetterBlueTheme(

@@ -20,8 +20,10 @@ import kotlinx.serialization.json.put
 import java.time.Instant
 import java.time.ZoneId
 
-class HyundaiUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
-
+class HyundaiUsaClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config),
+    ApiClient {
     internal val clientId = "m66129Bb-em93-SPAHYN-bZ91-am4540zp19920"
     internal val clientSecret = "v558o935-6nne-423i-baa8"
 
@@ -32,102 +34,109 @@ class HyundaiUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClie
 
     // Headers
 
-    internal fun headers(): Map<String, String> = mapOf(
-        "client_id" to clientId,
-        "clientSecret" to clientSecret,
-        "Host" to apiHost,
-        "User-Agent" to "okhttp/3.12.0",
-        "Content-Type" to "application/json",
-        "Accept" to "application/json, text/plain, */*",
-        "Accept-Encoding" to "gzip, deflate, br",
-        "Accept-Language" to "en-US,en;q=0.9",
-        "Connection" to "Keep-Alive",
-    )
+    internal fun headers(): Map<String, String> =
+        mapOf(
+            "client_id" to clientId,
+            "clientSecret" to clientSecret,
+            "Host" to apiHost,
+            "User-Agent" to "okhttp/3.12.0",
+            "Content-Type" to "application/json",
+            "Accept" to "application/json, text/plain, */*",
+            "Accept-Encoding" to "gzip, deflate, br",
+            "Accept-Language" to "en-US,en;q=0.9",
+            "Connection" to "Keep-Alive",
+        )
 
     internal fun authorizedHeaders(
         authToken: AuthToken,
         vehicle: Vehicle? = null,
         refresh: Boolean = false,
-    ): Map<String, String> = buildMap {
-        putAll(headers())
-        put("accessToken", authToken.accessToken)
-        put("language", "0")
-        put("to", "ISS")
-        put("encryptFlag", "false")
-        put("from", "SPA")
-        put("offset", "-5")
-        put("brandIndicator", "H")
-        put("origin", "https://$apiHost")
-        put("referer", "https://$apiHost/login")
-        put("username", username)
-        put("blueLinkServicePin", pin)
-        // "refresh: true" forces the backend to poll the vehicle's modem for
-        // current state instead of returning the last cached snapshot. This is
-        // what MyHyundai uses for pull-to-refresh.
-        put("refresh", if (refresh) "true" else "false")
+    ): Map<String, String> =
+        buildMap {
+            putAll(headers())
+            put("accessToken", authToken.accessToken)
+            put("language", "0")
+            put("to", "ISS")
+            put("encryptFlag", "false")
+            put("from", "SPA")
+            put("offset", "-5")
+            put("brandIndicator", "H")
+            put("origin", "https://$apiHost")
+            put("referer", "https://$apiHost/login")
+            put("username", username)
+            put("blueLinkServicePin", pin)
+            // "refresh: true" forces the backend to poll the vehicle's modem for
+            // current state instead of returning the last cached snapshot. This is
+            // what MyHyundai uses for pull-to-refresh.
+            put("refresh", if (refresh) "true" else "false")
 
-        if (vehicle != null) {
-            put("gen", vehicle.generation.toString())
-            put("registrationId", vehicle.regId)
-            put("vin", vehicle.vin)
-            put("APPCLOUD-VIN", vehicle.vin)
+            if (vehicle != null) {
+                put("gen", vehicle.generation.toString())
+                put("registrationId", vehicle.regId)
+                put("vin", vehicle.vin)
+                put("APPCLOUD-VIN", vehicle.vin)
+            }
+
+            put("payloadGenerated", BluelinkDates.formatBasic14(Instant.now(), ZoneId.systemDefault()))
+            put("includeNonConnectedVehicles", "Y")
         }
-
-        put("payloadGenerated", BluelinkDates.formatBasic14(Instant.now(), ZoneId.systemDefault()))
-        put("includeNonConnectedVehicles", "Y")
-    }
 
     // ApiClient implementation
 
     override suspend fun login(): AuthToken {
         BBLogger.info(BBLogCategory.AUTH, "HyundaiUSA: Attempting login for $username")
 
-        val (_, result) = performJsonRequest(
-            url = "$baseUrl/v2/ac/oauth/token",
-            method = HttpMethod.POST,
-            headers = headers(),
-            body = buildJsonObject {
-                put("username", username)
-                put("password", password)
-            },
-            requestType = HttpRequestType.LOGIN,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "$baseUrl/v2/ac/oauth/token",
+                method = HttpMethod.POST,
+                headers = headers(),
+                body =
+                    buildJsonObject {
+                        put("username", username)
+                        put("password", password)
+                    },
+                requestType = HttpRequestType.LOGIN,
+            )
 
         return parseLoginResponse(result.body)
     }
 
     override suspend fun fetchVehicles(authToken: AuthToken): List<Vehicle> {
-        val result = performRequest(
-            url = "$baseUrl/ac/v2/enrollment/details/$username",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken),
-            requestType = HttpRequestType.FETCH_VEHICLES,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/ac/v2/enrollment/details/$username",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken),
+                requestType = HttpRequestType.FETCH_VEHICLES,
+            )
 
         return parseVehiclesResponse(result.body)
     }
 
     override suspend fun fetchVehicleStatus(vehicle: Vehicle, authToken: AuthToken, cached: Boolean): VehicleStatus {
-        val result = performRequest(
-            url = "$baseUrl/ac/v2/rcs/rvs/vehicleStatus",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken, vehicle, refresh = !cached),
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/ac/v2/rcs/rvs/vehicleStatus",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken, vehicle, refresh = !cached),
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
         return parseVehicleStatusResponse(result.body, vehicle)
     }
 
     override suspend fun sendCommand(vehicle: Vehicle, command: VehicleCommand, authToken: AuthToken) {
-        val result = performRequest(
-            url = commandUrl(command, vehicle),
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, vehicle),
-            body = commandBody(command, vehicle).toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.SEND_COMMAND,
-            vin = vehicle.vin,
-        )
+        val result =
+            performRequest(
+                url = commandUrl(command, vehicle),
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, vehicle),
+                body = commandBody(command, vehicle).toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.SEND_COMMAND,
+                vin = vehicle.vin,
+            )
 
         parseCommandResponse(result.body)
     }
@@ -136,16 +145,18 @@ class HyundaiUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClie
         setOf(OptionalApiFeature.EV_TRIP_SUMMARY, OptionalApiFeature.SURROUND_VIEW)
 
     override suspend fun fetchEvTripSummary(vehicle: Vehicle, authToken: AuthToken): List<EVTripSummary>? {
-        val tripHeaders = authorizedHeaders(authToken, vehicle) +
-            mapOf("userId" to username, "access_token" to authToken.accessToken)
+        val tripHeaders =
+            authorizedHeaders(authToken, vehicle) +
+                mapOf("userId" to username, "access_token" to authToken.accessToken)
 
-        val result = performRequest(
-            url = "$baseUrl/ac/v2/ts/alerts/maintenance/evTripDetails",
-            method = HttpMethod.GET,
-            headers = tripHeaders,
-            requestType = HttpRequestType.FETCH_EV_TRIP_SUMMARY,
-            vin = vehicle.vin,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/ac/v2/ts/alerts/maintenance/evTripDetails",
+                method = HttpMethod.GET,
+                headers = tripHeaders,
+                requestType = HttpRequestType.FETCH_EV_TRIP_SUMMARY,
+                vin = vehicle.vin,
+            )
 
         return parseEvTripSummaryResponse(result.body)
     }

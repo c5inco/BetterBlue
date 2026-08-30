@@ -24,7 +24,8 @@ object Uuid5 {
     }
 
     private fun toBytes(uuid: UUID): ByteArray =
-        ByteBuffer.allocate(16)
+        ByteBuffer
+            .allocate(16)
             .putLong(uuid.mostSignificantBits)
             .putLong(uuid.leastSignificantBits)
             .array()

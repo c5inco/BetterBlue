@@ -1,6 +1,7 @@
 package com.betterblue.app.ui.screens.main
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,18 +17,24 @@ import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.LocalGasStation
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,6 +44,7 @@ import com.betterblue.app.data.db.entity.VehicleEntity
 import com.betterblue.app.data.repo.displayName
 import com.betterblue.app.data.repo.effectiveFuelType
 import com.betterblue.app.ui.common.ErrorDetailsCard
+import com.betterblue.app.ui.sheets.SheetRoute
 import com.betterblue.app.ui.theme.VehicleAccentColors
 import com.betterblue.kit.model.Distance
 import com.betterblue.kit.model.Temperature
@@ -60,25 +68,28 @@ fun VehicleCard(
     onToggleClimate: () -> Unit,
     onToggleCharge: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenSheet: (SheetRoute) -> Unit,
     onDismissError: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = VehicleAccentColors.resolve(
-        vehicle.primaryColorName,
-        vehicle.chargingColorName,
-        vehicle.gasColorName,
-        vehicle.lockColorName,
-        vehicle.unlockColorName,
-        vehicle.startClimateColorName,
-        vehicle.stopColorName,
-    )
+    val colors =
+        VehicleAccentColors.resolve(
+            vehicle.primaryColorName,
+            vehicle.chargingColorName,
+            vehicle.gasColorName,
+            vehicle.lockColorName,
+            vehicle.unlockColorName,
+            vehicle.startClimateColorName,
+            vehicle.stopColorName,
+        )
 
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(bottom = 24.dp),
+        modifier =
+            modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 24.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         // Header
@@ -102,9 +113,7 @@ fun VehicleCard(
                     Icon(Icons.Filled.Refresh, contentDescription = "Refresh", tint = colors.primary)
                 }
             }
-            IconButton(onClick = onOpenSettings) {
-                Icon(Icons.Filled.Settings, contentDescription = "Settings")
-            }
+            VehicleMenu(vehicle = vehicle, onOpenSheet = onOpenSheet, onOpenSettings = onOpenSettings)
         }
 
         // Range
@@ -112,7 +121,9 @@ fun VehicleCard(
             RangeRow(
                 label = if (ev.charging) "Charging" else "Battery",
                 percentage = ev.evRange.percentage,
-                rangeText = ev.evRange.range.units.format(ev.evRange.range.length, distanceUnit),
+                rangeText =
+                    ev.evRange.range.units
+                        .format(ev.evRange.range.length, distanceUnit),
                 color = colors.charging,
             )
             if (ev.charging && ev.chargeTimeSeconds > 0) {
@@ -135,18 +146,24 @@ fun VehicleCard(
         // Command state: an "awaiting confirmation" outcome is a soft chip,
         // never an error card — the command WAS accepted upstream.
         when {
-            action.inProgress -> Row(verticalAlignment = Alignment.CenterVertically) {
-                CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
-                Spacer(Modifier.width(8.dp))
-                Text(action.statusMessage ?: "Working…", style = MaterialTheme.typography.labelLarge)
+            action.inProgress -> {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                    Text(action.statusMessage ?: "Working…", style = MaterialTheme.typography.labelLarge)
+                }
             }
 
-            action.awaitingConfirmation -> AssistChip(
-                onClick = onDismissError,
-                label = { Text("Awaiting confirmation") },
-            )
+            action.awaitingConfirmation -> {
+                AssistChip(
+                    onClick = onDismissError,
+                    label = { Text("Awaiting confirmation") },
+                )
+            }
 
-            action.error != null -> ErrorDetailsCard(action.error)
+            action.error != null -> {
+                ErrorDetailsCard(action.error)
+            }
         }
 
         // Primary actions
@@ -265,5 +282,68 @@ private fun lastUpdatedLabel(lastUpdatedMillis: Long?): String {
         minutes < 60 -> "Updated $minutes min ago"
         minutes < 60 * 24 -> "Updated ${minutes / 60} hr ago"
         else -> "Updated ${minutes / (60 * 24)} d ago"
+    }
+}
+
+/**
+ * The card's overflow menu — the Android analog of the iOS long-press
+ * context menu on the sheet header. Entries are gated the same way: charge
+ * limits and trips only for vehicles with a battery, surround view behind
+ * the per-vehicle override, fake config only for fake vehicles.
+ */
+@Composable
+private fun VehicleMenu(
+    vehicle: VehicleEntity,
+    onOpenSheet: (SheetRoute) -> Unit,
+    onOpenSettings: () -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    Box {
+        IconButton(onClick = { expanded = true }) {
+            Icon(Icons.Filled.MoreVert, contentDescription = "More")
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            fun item(label: String, route: SheetRoute) {
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        expanded = false
+                        onOpenSheet(route)
+                    },
+                )
+            }
+
+            item("Vehicle settings", SheetRoute.VehicleInfo(vehicle.vin))
+            item("Climate presets", SheetRoute.ClimateSettings(vehicle.vin))
+
+            if (vehicle.effectiveFuelType.hasElectricCapability) {
+                item("Charge limits", SheetRoute.ChargeLimits(vehicle.vin))
+                item("Trips", SheetRoute.TripDetails(vehicle.vin))
+            }
+
+            // Surround view is a newer-generation feature; an unknown
+            // generation is assumed capable rather than hidden on a guess.
+            val showsSurroundView =
+                vehicle.surroundViewOverride ?: (vehicle.generation == 0 || vehicle.generation >= 3)
+            if (showsSurroundView) {
+                item("Surround view", SheetRoute.SurroundView(vehicle.vin))
+            }
+
+            item("Account", SheetRoute.AccountInfo(vehicle.vin, vehicle.accountId))
+            item("HTTP logs", SheetRoute.HttpLogs(vehicle.vin))
+
+            if (vehicle.debugConfigJson != null) {
+                item("Debug configuration", SheetRoute.FakeVehicleConfig(vehicle.vin))
+            }
+
+            DropdownMenuItem(
+                text = { Text("App settings") },
+                onClick = {
+                    expanded = false
+                    onOpenSettings()
+                },
+            )
+        }
     }
 }

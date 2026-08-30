@@ -5,7 +5,9 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.betterblue.kit.log.HttpLog
 
-enum class DeviceType(val displayName: String) {
+enum class DeviceType(
+    val displayName: String,
+) {
     PHONE("Phone"),
     TABLET("Tablet"),
     WIDGET("Widget"),

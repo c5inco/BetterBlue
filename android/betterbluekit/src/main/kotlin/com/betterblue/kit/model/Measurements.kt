@@ -7,7 +7,10 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @Serializable
-data class Distance(val length: Double, val units: Units) {
+data class Distance(
+    val length: Double,
+    val units: Units,
+) {
     @Serializable
     enum class Units {
         @SerialName("miles")
@@ -20,20 +23,22 @@ data class Distance(val length: Double, val units: Units) {
         val displayName: String get() = if (this == MILES) "Miles" else "Kilometers"
         val abbreviation: String get() = if (this == MILES) "mi" else "km"
 
-        fun convert(length: Double, targetUnits: Units): Double = when {
-            this == targetUnits -> length
-            this == MILES && targetUnits == KILOMETERS -> length * 1.609344
-            this == KILOMETERS && targetUnits == MILES -> length / 1.609344
-            else -> length
-        }
+        fun convert(length: Double, targetUnits: Units): Double =
+            when {
+                this == targetUnits -> length
+                this == MILES && targetUnits == KILOMETERS -> length * 1.609344
+                this == KILOMETERS && targetUnits == MILES -> length / 1.609344
+                else -> length
+            }
 
         fun format(length: Double, targetUnits: Units): String {
             val convertedLength = convert(length, targetUnits)
             // Grouped decimal formatting so a 19,500 mi odometer doesn't render
             // as "19500"; the locale supplies the grouping separator.
-            val formatter = NumberFormat.getNumberInstance().apply {
-                maximumFractionDigits = 0
-            }
+            val formatter =
+                NumberFormat.getNumberInstance().apply {
+                    maximumFractionDigits = 0
+                }
             return "${formatter.format(convertedLength)} ${targetUnits.abbreviation}"
         }
 
@@ -60,7 +65,10 @@ data class Distance(val length: Double, val units: Units) {
 enum class HvacTemperatureTable { STANDARD, EUROPEAN }
 
 @Serializable
-data class Temperature(val units: Units, val value: Double) {
+data class Temperature(
+    val units: Units,
+    val value: Double,
+) {
     @Serializable
     enum class Units {
         @SerialName("celsius")
@@ -71,15 +79,17 @@ data class Temperature(val units: Units, val value: Double) {
         ;
 
         fun toInt(): Int = if (this == FAHRENHEIT) 1 else 0
+
         val displayName: String get() = if (this == FAHRENHEIT) "Fahrenheit" else "Celsius"
         val symbol: String get() = if (this == FAHRENHEIT) "°F" else "°C"
 
         /** Standard HVAC range for this unit. */
         val hvacRange: ClosedFloatingPointRange<Double>
-            get() = when (this) {
-                FAHRENHEIT -> 62.0..82.0
-                CELSIUS -> 16.0..28.0
-            }
+            get() =
+                when (this) {
+                    FAHRENHEIT -> 62.0..82.0
+                    CELSIUS -> 16.0..28.0
+                }
 
         fun format(temperature: Double, targetUnits: Units): String {
             val convertedTemperature = convert(temperature, targetUnits)
@@ -87,17 +97,18 @@ data class Temperature(val units: Units, val value: Double) {
             // up to one decimal; Fahrenheit is whole-degree only. The locale
             // supplies the decimal separator ("22,5°C" in de-DE).
             val formatter = NumberFormat.getNumberInstance()
-            val displayValue = when (targetUnits) {
-                CELSIUS -> {
-                    formatter.maximumFractionDigits = 1
-                    Math.round(convertedTemperature * 2).toDouble() / 2
-                }
+            val displayValue =
+                when (targetUnits) {
+                    CELSIUS -> {
+                        formatter.maximumFractionDigits = 1
+                        Math.round(convertedTemperature * 2).toDouble() / 2
+                    }
 
-                FAHRENHEIT -> {
-                    formatter.maximumFractionDigits = 0
-                    convertedTemperature
+                    FAHRENHEIT -> {
+                        formatter.maximumFractionDigits = 0
+                        convertedTemperature
+                    }
                 }
-            }
             return "${formatter.format(displayValue)}${targetUnits.symbol}"
         }
 
@@ -106,11 +117,12 @@ data class Temperature(val units: Units, val value: Double) {
          * the HVAC controller — the car only accepts values from its lookup
          * table; use [Temperature.hvacConvert] for those.
          */
-        fun convert(temperature: Double, targetUnits: Units): Double = when {
-            this == CELSIUS && targetUnits == FAHRENHEIT -> (temperature * 9.0 / 5.0) + 32.0
-            this == FAHRENHEIT && targetUnits == CELSIUS -> (temperature - 32.0) * 5.0 / 9.0
-            else -> temperature
-        }
+        fun convert(temperature: Double, targetUnits: Units): Double =
+            when {
+                this == CELSIUS && targetUnits == FAHRENHEIT -> (temperature * 9.0 / 5.0) + 32.0
+                this == FAHRENHEIT && targetUnits == CELSIUS -> (temperature - 32.0) * 5.0 / 9.0
+                else -> temperature
+            }
 
         companion object {
             /** Hyundai/Kia unit code: 1 = fahrenheit, anything else (or null) = celsius. */
@@ -129,12 +141,13 @@ data class Temperature(val units: Units, val value: Double) {
         fun fromApi(units: Int?, value: String?): Temperature {
             val parsedUnits = Units.fromInt(units)
             val number = value?.toDoubleOrNull()
-            val parsedValue = when {
-                number != null -> number
-                value == "HI" -> Units.FAHRENHEIT.convert(MAXIMUM, parsedUnits)
-                !value.isNullOrEmpty() && value.endsWith("H") -> parseAirTempFromHex(value, parsedUnits)
-                else -> Units.FAHRENHEIT.convert(MINIMUM, parsedUnits)
-            }
+            val parsedValue =
+                when {
+                    number != null -> number
+                    value == "HI" -> Units.FAHRENHEIT.convert(MAXIMUM, parsedUnits)
+                    !value.isNullOrEmpty() && value.endsWith("H") -> parseAirTempFromHex(value, parsedUnits)
+                    else -> Units.FAHRENHEIT.convert(MINIMUM, parsedUnits)
+                }
             return Temperature(parsedUnits, parsedValue)
         }
 
@@ -175,7 +188,9 @@ data class Temperature(val units: Units, val value: Double) {
                     pairs.minBy { abs(it.second - rounded) }.first
                 }
 
-                else -> value
+                else -> {
+                    value
+                }
             }
         }
 
@@ -201,32 +216,35 @@ data class Temperature(val units: Units, val value: Double) {
          * Standard table (`hvacTempType != 1`) — note the duplicate-target rows
          * 17.5/18.0 → 63°F and 31.0/31.5 → 89°F.
          */
-        private val STANDARD_TABLE: List<Pair<Double, Int>> = listOf(
-            14.5 to 57, 15.0 to 58, 15.5 to 59, 16.0 to 60, 16.5 to 61,
-            17.0 to 62, 17.5 to 63, 18.0 to 63,
-            18.5 to 64, 19.0 to 65, 19.5 to 66, 20.0 to 67, 20.5 to 68,
-            21.0 to 69, 21.5 to 70, 22.0 to 71, 22.5 to 72, 23.0 to 73,
-            23.5 to 74, 24.0 to 75, 24.5 to 76, 25.0 to 77, 25.5 to 78,
-            26.0 to 79, 26.5 to 80, 27.0 to 81, 27.5 to 82, 28.0 to 83,
-            28.5 to 84, 29.0 to 85, 29.5 to 86, 30.0 to 87, 30.5 to 88,
-            31.0 to 89, 31.5 to 89,
-            32.0 to 90, 32.5 to 91,
-        )
+        private val STANDARD_TABLE: List<Pair<Double, Int>> =
+            listOf(
+                14.5 to 57, 15.0 to 58, 15.5 to 59, 16.0 to 60, 16.5 to 61,
+                17.0 to 62, 17.5 to 63, 18.0 to 63,
+                18.5 to 64, 19.0 to 65, 19.5 to 66, 20.0 to 67, 20.5 to 68,
+                21.0 to 69, 21.5 to 70, 22.0 to 71, 22.5 to 72, 23.0 to 73,
+                23.5 to 74, 24.0 to 75, 24.5 to 76, 25.0 to 77, 25.5 to 78,
+                26.0 to 79, 26.5 to 80, 27.0 to 81, 27.5 to 82, 28.0 to 83,
+                28.5 to 84, 29.0 to 85, 29.5 to 86, 30.0 to 87, 30.5 to 88,
+                31.0 to 89, 31.5 to 89,
+                32.0 to 90, 32.5 to 91,
+            )
 
         /** EU table (`hvacTempType == 1`) — strict 0.5°C → integer °F, no duplicates. */
-        private val EU_TABLE: List<Pair<Double, Int>> = listOf(
-            15.0 to 58, 15.5 to 59, 16.0 to 60, 16.5 to 61, 17.0 to 62,
-            17.5 to 63, 18.0 to 64, 18.5 to 65, 19.0 to 66, 19.5 to 67,
-            20.0 to 68, 20.5 to 69, 21.0 to 70, 21.5 to 71, 22.0 to 72,
-            22.5 to 73, 23.0 to 74, 23.5 to 75, 24.0 to 76, 24.5 to 77,
-            25.0 to 78, 25.5 to 79, 26.0 to 80, 26.5 to 81, 27.0 to 82,
-            27.5 to 83, 28.0 to 84, 28.5 to 85, 29.0 to 86, 29.5 to 87,
-            30.0 to 88,
-        )
+        private val EU_TABLE: List<Pair<Double, Int>> =
+            listOf(
+                15.0 to 58, 15.5 to 59, 16.0 to 60, 16.5 to 61, 17.0 to 62,
+                17.5 to 63, 18.0 to 64, 18.5 to 65, 19.0 to 66, 19.5 to 67,
+                20.0 to 68, 20.5 to 69, 21.0 to 70, 21.5 to 71, 22.0 to 72,
+                22.5 to 73, 23.0 to 74, 23.5 to 75, 24.0 to 76, 24.5 to 77,
+                25.0 to 78, 25.5 to 79, 26.0 to 80, 26.5 to 81, 27.0 to 82,
+                27.5 to 83, 28.0 to 84, 28.5 to 85, 29.0 to 86, 29.5 to 87,
+                30.0 to 88,
+            )
 
-        private fun pairsFor(table: HvacTemperatureTable): List<Pair<Double, Int>> = when (table) {
-            HvacTemperatureTable.STANDARD -> STANDARD_TABLE
-            HvacTemperatureTable.EUROPEAN -> EU_TABLE
-        }
+        private fun pairsFor(table: HvacTemperatureTable): List<Pair<Double, Int>> =
+            when (table) {
+                HvacTemperatureTable.STANDARD -> STANDARD_TABLE
+                HvacTemperatureTable.EUROPEAN -> EU_TABLE
+            }
     }
 }

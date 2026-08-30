@@ -26,33 +26,34 @@ import java.util.Base64
  * nested `gpsDetail.coord`, and 0/1 door flags.
  */
 class HyundaiUsaSurroundViewTest {
-
     /** Bytes that merely look like a JPEG — the decoder splits on markers. */
     private fun fakeJpeg(marker: Byte, padding: Int = 8): ByteArray =
         byteArrayOf(0xFF.toByte(), 0xD8.toByte(), 0xFF.toByte(), 0xE0.toByte()) +
             ByteArray(padding) { marker } +
             byteArrayOf(0xFF.toByte(), 0xD9.toByte())
 
-    private fun makeClient() = HyundaiUsaClient(
-        ApiClientConfig(
-            region = Region.USA,
-            brand = Brand.HYUNDAI,
-            username = "test@example.com",
-            password = "password123",
-            pin = "1234",
-            accountId = "00000000-0000-0000-0000-000000000001",
-        ),
-    )
+    private fun makeClient() =
+        HyundaiUsaClient(
+            ApiClientConfig(
+                region = Region.USA,
+                brand = Brand.HYUNDAI,
+                username = "test@example.com",
+                password = "password123",
+                pin = "1234",
+                accountId = "00000000-0000-0000-0000-000000000001",
+            ),
+        )
 
-    private fun makeVehicle() = Vehicle(
-        vin = "TESTVIN0000000000",
-        regId = "reg",
-        model = "PALISADE",
-        accountId = "00000000-0000-0000-0000-000000000002",
-        fuelType = FuelType.GAS,
-        generation = 3,
-        odometer = Distance(0.0, Distance.Units.KILOMETERS),
-    )
+    private fun makeVehicle() =
+        Vehicle(
+            vin = "TESTVIN0000000000",
+            regId = "reg",
+            model = "PALISADE",
+            accountId = "00000000-0000-0000-0000-000000000002",
+            fuelType = FuelType.GAS,
+            generation = 3,
+            odometer = Distance(0.0, Distance.Units.KILOMETERS),
+        )
 
     /**
      * One `svmDetail` shaped like the app's real sample: nested coordinates,
@@ -60,30 +61,32 @@ class HyundaiUsaSurroundViewTest {
      * imageSize.
      */
     private fun makePayload(entries: List<Pair<String, Byte>>): ByteArray {
-        val details = entries.joinToString(",") { (time, marker) ->
-            """
-            {"svmDetail": {
-              "sidemirrorOpen": false,
-              "trunkOpen": false,
-              "doorOpen": {"frontLeft": 0, "frontRight": 1, "backLeft": 0, "backRight": 0},
-              "imageSize": [4472, 720, 960, 720, 632, 720],
-              "gpsDetail": {
-                "coord": {"lat": 42.271284, "alt": 254, "lon": -83.625744, "type": 0},
-                "speed": {"value": 0, "unit": 1}, "time": "$time", "head": 93
-              },
-              "svmImage": "${Base64.getEncoder().encodeToString(fakeJpeg(marker))}"
-            }}
-            """.trimIndent()
-        }
+        val details =
+            entries.joinToString(",") { (time, marker) ->
+                """
+                {"svmDetail": {
+                  "sidemirrorOpen": false,
+                  "trunkOpen": false,
+                  "doorOpen": {"frontLeft": 0, "frontRight": 1, "backLeft": 0, "backRight": 0},
+                  "imageSize": [4472, 720, 960, 720, 632, 720],
+                  "gpsDetail": {
+                    "coord": {"lat": 42.271284, "alt": 254, "lon": -83.625744, "type": 0},
+                    "speed": {"value": 0, "unit": 1}, "time": "$time", "head": 93
+                  },
+                  "svmImage": "${Base64.getEncoder().encodeToString(fakeJpeg(marker))}"
+                }}
+                """.trimIndent()
+            }
         return """{"svmDetails": [$details]}""".toByteArray()
     }
 
     @Test
     fun `a capture's imagery and metadata parse`() {
-        val captures = makeClient().parseUsaSurroundViewResponse(
-            makePayload(listOf("20260826003935" to 0x11)),
-            makeVehicle(),
-        )
+        val captures =
+            makeClient().parseUsaSurroundViewResponse(
+                makePayload(listOf("20260826003935" to 0x11)),
+                makeVehicle(),
+            )
 
         val capture = captures.first()
         assertEquals("TESTVIN0000000000", capture.vin)
@@ -102,22 +105,25 @@ class HyundaiUsaSurroundViewTest {
     fun `gpsDetail time is read as UTC`() {
         // The `time` has no timezone in it — reading it as local time would
         // shift every capture by the user's offset.
-        val capture = makeClient().parseUsaSurroundViewResponse(
-            makePayload(listOf("20260826003935" to 0x11)),
-            makeVehicle(),
-        ).first()
+        val capture =
+            makeClient()
+                .parseUsaSurroundViewResponse(
+                    makePayload(listOf("20260826003935" to 0x11)),
+                    makeVehicle(),
+                ).first()
 
         assertEquals(Instant.parse("2026-08-26T00:39:35Z"), capture.capturedAt)
     }
 
     @Test
     fun `timestamp falls back to a top-level time when gpsDetail is absent`() {
-        val payload = """
+        val payload =
+            """
             {"svmDetails": [{"svmDetail": {
               "time": "20260826003935",
               "svmImage": "${Base64.getEncoder().encodeToString(fakeJpeg(0x11))}"
             }}]}
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val capture = makeClient().parseUsaSurroundViewResponse(payload, makeVehicle()).first()
         assertNotNull(capture.capturedAt)
@@ -126,16 +132,17 @@ class HyundaiUsaSurroundViewTest {
 
     @Test
     fun `captures are returned newest first`() {
-        val captures = makeClient().parseUsaSurroundViewResponse(
-            makePayload(
-                listOf(
-                    "20260713192923" to 0x11,
-                    "20260826003935" to 0x22,
-                    "20260806221826" to 0x33,
+        val captures =
+            makeClient().parseUsaSurroundViewResponse(
+                makePayload(
+                    listOf(
+                        "20260713192923" to 0x11,
+                        "20260826003935" to 0x22,
+                        "20260806221826" to 0x33,
+                    ),
                 ),
-            ),
-            makeVehicle(),
-        )
+                makeVehicle(),
+            )
 
         assertEquals(3, captures.size)
         val timestamps = captures.mapNotNull { it.capturedAt }
@@ -144,7 +151,8 @@ class HyundaiUsaSurroundViewTest {
 
     @Test
     fun `door and trunk flags tolerate numbers and booleans`() {
-        val payload = """
+        val payload =
+            """
             {"svmDetails": [{"svmDetail": {
               "time": "20260826003935",
               "trunkOpen": 1,
@@ -152,7 +160,7 @@ class HyundaiUsaSurroundViewTest {
               "doorOpen": {"frontLeft": true, "frontRight": 0, "backLeft": 1, "backRight": false},
               "svmImage": "${Base64.getEncoder().encodeToString(fakeJpeg(0x11))}"
             }}]}
-        """.trimIndent().toByteArray()
+            """.trimIndent().toByteArray()
 
         val capture = makeClient().parseUsaSurroundViewResponse(payload, makeVehicle()).first()
         assertEquals(true, capture.trunkOpen)

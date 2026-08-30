@@ -31,7 +31,9 @@ import java.time.Instant
  * neither generalizes, so try each in turn instead of betting the region on
  * one.
  */
-internal enum class LocationStrategy(val path: String) {
+internal enum class LocationStrategy(
+    val path: String,
+) {
     /**
      * `fndmcr` with the native-app identity, whichever variant the account
      * logs in with. Most recently verified.
@@ -111,22 +113,26 @@ private suspend fun HyundaiCanadaClient.sendLocationRequest(
     authToken: AuthToken,
     pAuth: String,
 ): ByteArray {
-    val requestHeaders = when (strategy) {
-        LocationStrategy.FIND_MY_CAR_NATIVE, LocationStrategy.FIND_MY_ELECTRIC_NATIVE ->
-            locationHeaders(authToken, vehicleId = vehicle.regId, pAuth = pAuth)
+    val requestHeaders =
+        when (strategy) {
+            LocationStrategy.FIND_MY_CAR_NATIVE, LocationStrategy.FIND_MY_ELECTRIC_NATIVE -> {
+                locationHeaders(authToken, vehicleId = vehicle.regId, pAuth = pAuth)
+            }
 
-        LocationStrategy.FIND_MY_CAR_ACCOUNT ->
-            authorizedHeaders(authToken, vehicleId = vehicle.regId, pAuth = pAuth)
-    }
+            LocationStrategy.FIND_MY_CAR_ACCOUNT -> {
+                authorizedHeaders(authToken, vehicleId = vehicle.regId, pAuth = pAuth)
+            }
+        }
 
-    val (_, result) = performJsonRequest(
-        url = "$apiBaseUrl/${strategy.path}",
-        method = HttpMethod.POST,
-        headers = requestHeaders,
-        body = buildJsonObject { put("pin", pin) },
-        requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-        vin = vehicle.vin,
-    )
+    val (_, result) =
+        performJsonRequest(
+            url = "$apiBaseUrl/${strategy.path}",
+            method = HttpMethod.POST,
+            headers = requestHeaders,
+            body = buildJsonObject { put("pin", pin) },
+            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+            vin = vehicle.vin,
+        )
 
     // Validated here so an API-level refusal (HTTP 200 with `responseCode: 1`)
     // still moves on to the next strategy.
@@ -145,34 +151,41 @@ internal suspend fun HyundaiCanadaClient.injectLocationCoordinates(
     data: ByteArray,
     vehicle: Vehicle,
     authToken: AuthToken,
-): ByteArray = try {
-    val pAuth = fetchCommandAuthCode(authToken)
-    val locationData = fetchLocationData(vehicle, authToken, pAuth)
-    val location = parseCanadaLocationResponse(locationData)
+): ByteArray =
+    try {
+        val pAuth = fetchCommandAuthCode(authToken)
+        val locationData = fetchLocationData(vehicle, authToken, pAuth)
+        val location = parseCanadaLocationResponse(locationData)
 
-    val root = com.betterblue.kit.ApiClientBase.parseJsonObject(data)
-    if (root.isEmpty()) {
-        data
-    } else {
-        val coord = buildJsonObject {
-            put("lat", location.latitude)
-            put("lon", location.longitude)
+        val root =
+            com.betterblue.kit.ApiClientBase
+                .parseJsonObject(data)
+        if (root.isEmpty()) {
+            data
+        } else {
+            val coord =
+                buildJsonObject {
+                    put("lat", location.latitude)
+                    put("lon", location.longitude)
+                }
+            val result = root["result"] as? JsonObject ?: JsonObject(emptyMap())
+            val status =
+                result["status"] as? JsonObject
+                    ?: result["vehicleStatus"] as? JsonObject
+                    ?: JsonObject(emptyMap())
+            val newStatus =
+                JsonObject(
+                    status +
+                        mapOf(
+                            "coord" to coord,
+                            "vehicleLocation" to buildJsonObject { put("coord", coord) },
+                        ),
+                )
+            val newResult = JsonObject(result + mapOf("status" to newStatus))
+            val newRoot = JsonObject(root + mapOf("result" to newResult))
+            newRoot.toString().toByteArray(Charsets.UTF_8)
         }
-        val result = root["result"] as? JsonObject ?: JsonObject(emptyMap())
-        val status = result["status"] as? JsonObject
-            ?: result["vehicleStatus"] as? JsonObject
-            ?: JsonObject(emptyMap())
-        val newStatus = JsonObject(
-            status + mapOf(
-                "coord" to coord,
-                "vehicleLocation" to buildJsonObject { put("coord", coord) },
-            ),
-        )
-        val newResult = JsonObject(result + mapOf("status" to newStatus))
-        val newRoot = JsonObject(root + mapOf("result" to newResult))
-        newRoot.toString().toByteArray(Charsets.UTF_8)
+    } catch (error: Exception) {
+        BBLogger.debug(BBLogCategory.API, "HyundaiCanada: failed injecting location: $error")
+        data
     }
-} catch (error: Exception) {
-    BBLogger.debug(BBLogCategory.API, "HyundaiCanada: failed injecting location: $error")
-    data
-}

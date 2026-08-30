@@ -19,25 +19,29 @@ internal fun HyundaiEuropeClient.commandPathAndBody(
 ): Pair<String, JsonObject> {
     val deviceId = config.deviceId ?: ""
     return when (command) {
-        VehicleCommand.Lock ->
+        VehicleCommand.Lock -> {
             if (ccs2) {
                 "ccs2/control/door" to buildJsonObject { put("command", "close") }
             } else {
-                "control/door" to buildJsonObject {
-                    put("action", "close")
-                    put("deviceId", deviceId)
-                }
+                "control/door" to
+                    buildJsonObject {
+                        put("action", "close")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        VehicleCommand.Unlock ->
+        VehicleCommand.Unlock -> {
             if (ccs2) {
                 "ccs2/control/door" to buildJsonObject { put("command", "open") }
             } else {
-                "control/door" to buildJsonObject {
-                    put("action", "open")
-                    put("deviceId", deviceId)
-                }
+                "control/door" to
+                    buildJsonObject {
+                        put("action", "open")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
         is VehicleCommand.StartClimate -> {
             // EU vehicles share ApiImplType1.start_climate across both
@@ -46,95 +50,105 @@ internal fun HyundaiEuropeClient.commandPathAndBody(
             // via the EU lookup table (Temperature.hvacConvert) — a linear
             // F→C conversion like 22.22°C silently no-ops on the car.
             val options = command.options
-            val tempCelsius = Temperature.hvacConvert(
-                options.temperature.value,
-                sourceUnits = options.temperature.units,
-                targetUnits = Temperature.Units.CELSIUS,
-                table = HvacTemperatureTable.EUROPEAN,
-            )
+            val tempCelsius =
+                Temperature.hvacConvert(
+                    options.temperature.value,
+                    sourceUnits = options.temperature.units,
+                    targetUnits = Temperature.Units.CELSIUS,
+                    table = HvacTemperatureTable.EUROPEAN,
+                )
             if (ccs2) {
                 "ccs2/control/temperature" to
                     euStartClimateCcs2Body(options, tempCelsius, drvSeatLoc)
             } else {
-                "control/temperature" to buildJsonObject {
-                    put("action", "start")
-                    put("hvacType", 0)
-                    put(
-                        "options",
-                        buildJsonObject {
-                            put("defrost", options.defrost)
-                            put("heating1", options.heatValue)
-                            put("igniOnDuration", options.duration)
-                        },
-                    )
-                    put("tempCode", Temperature.encodeAirTempToHex(tempCelsius))
-                    put("unit", "C")
-                }
+                "control/temperature" to
+                    buildJsonObject {
+                        put("action", "start")
+                        put("hvacType", 0)
+                        put(
+                            "options",
+                            buildJsonObject {
+                                put("defrost", options.defrost)
+                                put("heating1", options.heatValue)
+                                put("igniOnDuration", options.duration)
+                            },
+                        )
+                        put("tempCode", Temperature.encodeAirTempToHex(tempCelsius))
+                        put("unit", "C")
+                    }
             }
         }
 
-        VehicleCommand.StopClimate ->
+        VehicleCommand.StopClimate -> {
             if (ccs2) {
                 "ccs2/control/temperature" to buildJsonObject { put("command", "stop") }
             } else {
-                "control/temperature" to buildJsonObject {
-                    put("action", "stop")
-                    put("hvacType", 0)
-                    put(
-                        "options",
-                        buildJsonObject {
-                            put("defrost", true)
-                            put("heating1", 1)
-                        },
-                    )
-                    put("tempCode", "10H")
-                    put("unit", "C")
-                }
+                "control/temperature" to
+                    buildJsonObject {
+                        put("action", "stop")
+                        put("hvacType", 0)
+                        put(
+                            "options",
+                            buildJsonObject {
+                                put("defrost", true)
+                                put("heating1", 1)
+                            },
+                        )
+                        put("tempCode", "10H")
+                        put("unit", "C")
+                    }
             }
+        }
 
-        VehicleCommand.StartCharge ->
+        VehicleCommand.StartCharge -> {
             if (ccs2) {
                 "ccs2/control/charge" to buildJsonObject { put("command", "start") }
             } else {
-                "control/charge" to buildJsonObject {
-                    put("action", "start")
-                    put("deviceId", deviceId)
-                }
+                "control/charge" to
+                    buildJsonObject {
+                        put("action", "start")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        VehicleCommand.StopCharge ->
+        VehicleCommand.StopCharge -> {
             if (ccs2) {
                 "ccs2/control/charge" to buildJsonObject { put("command", "stop") }
             } else {
-                "control/charge" to buildJsonObject {
-                    put("action", "stop")
-                    put("deviceId", deviceId)
-                }
+                "control/charge" to
+                    buildJsonObject {
+                        put("action", "stop")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        is VehicleCommand.SetTargetSoc ->
+        is VehicleCommand.SetTargetSoc -> {
             // plugType 0 = DC fast charge, 1 = AC — per ApiImplType1
             // set_charge_limits. The mapping was once inverted, so users set
             // the AC and DC limits onto the opposite plug type.
-            "charge/target" to buildJsonObject {
-                put(
-                    "targetSOClist",
-                    buildJsonArray {
-                        add(
-                            buildJsonObject {
-                                put("targetSOClevel", command.dcLevel)
-                                put("plugType", 0)
-                            },
-                        )
-                        add(
-                            buildJsonObject {
-                                put("targetSOClevel", command.acLevel)
-                                put("plugType", 1)
-                            },
-                        )
-                    },
-                )
-            }
+            "charge/target" to
+                buildJsonObject {
+                    put(
+                        "targetSOClist",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("targetSOClevel", command.dcLevel)
+                                    put("plugType", 0)
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("targetSOClevel", command.acLevel)
+                                    put("plugType", 1)
+                                },
+                            )
+                        },
+                    )
+                }
+        }
     }
 }
 
@@ -152,11 +166,12 @@ internal fun euStartClimateCcs2Body(
     // front-left/right seat controls map to passenger/driver — they're
     // SWAPPED relative to LHD. Matches hyundai_kia_connect_api's
     // `start_climate` seat handling.
-    val (drvSeat, psgSeat) = if (drvSeatLoc == "R") {
-        options.frontRightSeat to options.frontLeftSeat
-    } else {
-        options.frontLeftSeat to options.frontRightSeat
-    }
+    val (drvSeat, psgSeat) =
+        if (drvSeatLoc == "R") {
+            options.frontRightSeat to options.frontLeftSeat
+        } else {
+            options.frontLeftSeat to options.frontRightSeat
+        }
     return buildJsonObject {
         put("command", "start")
         put("ignitionDuration", options.duration)

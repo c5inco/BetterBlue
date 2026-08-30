@@ -49,36 +49,38 @@ internal fun HyundaiCanadaClient.locationHeaders(
     authToken: AuthToken,
     vehicleId: String,
     pAuth: String,
-): Map<String, String> = buildMap {
-    put("client_id", clientId)
-    put("client_secret", clientSecret)
-    put("host", apiHost)
-    put("deviceid", deviceId)
-    put("from", "SPA")
-    put("brand", "H")
-    put("language", "0")
-    put("offset", timezoneOffsetHeader)
-    put("user-agent", HyundaiCanadaClient.NATIVE_USER_AGENT)
-    put("content-type", "application/json")
-    put("accept", "application/json")
-    put("accesstoken", authToken.accessToken)
-    put("vehicleid", vehicleId)
-    put("pauth", pAuth)
-    cloudFlareCookie?.let { put("cookie", it) }
-}
+): Map<String, String> =
+    buildMap {
+        put("client_id", clientId)
+        put("client_secret", clientSecret)
+        put("host", apiHost)
+        put("deviceid", deviceId)
+        put("from", "SPA")
+        put("brand", "H")
+        put("language", "0")
+        put("offset", timezoneOffsetHeader)
+        put("user-agent", HyundaiCanadaClient.NATIVE_USER_AGENT)
+        put("content-type", "application/json")
+        put("accept", "application/json")
+        put("accesstoken", authToken.accessToken)
+        put("vehicleid", vehicleId)
+        put("pauth", pAuth)
+        cloudFlareCookie?.let { put("cookie", it) }
+    }
 
 internal fun HyundaiCanadaClient.authorizedHeaders(
     authToken: AuthToken,
     vehicleId: String? = null,
     pAuth: String? = null,
-): Map<String, String> = buildMap {
-    putAll(headers())
-    put("Accesstoken", authToken.accessToken)
+): Map<String, String> =
+    buildMap {
+        putAll(headers())
+        put("Accesstoken", authToken.accessToken)
 
-    if (vehicleId != null) put("Vehicleid", vehicleId)
-    if (pAuth != null) put("Pauth", pAuth)
-    cloudFlareCookie?.let { put("Cookie", it) }
-}
+        if (vehicleId != null) put("Vehicleid", vehicleId)
+        if (pAuth != null) put("Pauth", pAuth)
+        cloudFlareCookie?.let { put("Cookie", it) }
+    }
 
 // Cloudflare cookie
 
@@ -90,18 +92,20 @@ internal fun HyundaiCanadaClient.authorizedHeaders(
  * header keeps behavior identical and visible in logs).
  */
 internal suspend fun HyundaiCanadaClient.fetchCloudFlareCookie(): String {
-    val result = performRequest(
-        url = "https://$apiHost/login",
-        method = HttpMethod.GET,
-        headers = headers(),
-        requestType = HttpRequestType.LOGIN,
-    )
+    val result =
+        performRequest(
+            url = "https://$apiHost/login",
+            method = HttpMethod.GET,
+            headers = headers(),
+            requestType = HttpRequestType.LOGIN,
+        )
 
-    val cookieValue = result.headers.values("Set-Cookie").firstNotNullOfOrNull { header ->
-        val nameValue = header.substringBefore(';')
-        val name = nameValue.substringBefore('=').trim()
-        if (name.equals("__cf_bm", ignoreCase = true)) nameValue.substringAfter('=').trim() else null
-    } ?: throw ApiException.logError("CloudFlare cookie missing from login response", apiName = apiName)
+    val cookieValue =
+        result.headers.values("Set-Cookie").firstNotNullOfOrNull { header ->
+            val nameValue = header.substringBefore(';')
+            val name = nameValue.substringBefore('=').trim()
+            if (name.equals("__cf_bm", ignoreCase = true)) nameValue.substringAfter('=').trim() else null
+        } ?: throw ApiException.logError("CloudFlare cookie missing from login response", apiName = apiName)
 
     return "__cf_bm=$cookieValue"
 }
@@ -114,8 +118,9 @@ internal fun HyundaiCanadaClient.parseCanadaResponse(data: ByteArray, context: S
         throw ApiException.logError("Invalid JSON in Canada $context response", apiName = apiName)
     }
 
-    val responseHeader = json["responseHeader"] as? JsonObject
-        ?: throw ApiException.logError("Missing responseHeader in Canada $context response", apiName = apiName)
+    val responseHeader =
+        json["responseHeader"] as? JsonObject
+            ?: throw ApiException.logError("Missing responseHeader in Canada $context response", apiName = apiName)
 
     if (isCanadaResponseSuccess(responseHeader["responseCode"])) {
         return json

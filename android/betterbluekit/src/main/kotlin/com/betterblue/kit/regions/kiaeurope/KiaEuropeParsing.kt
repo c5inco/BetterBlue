@@ -22,8 +22,8 @@ import com.betterblue.kit.regions.ccsp.ccspBool
 import com.betterblue.kit.regions.ccsp.ccspChild
 import com.betterblue.kit.regions.ccsp.ccspDouble
 import com.betterblue.kit.regions.ccsp.ccspNumber
-import com.betterblue.kit.regions.ccsp.ccspString
 import com.betterblue.kit.regions.ccsp.ccspStrictInt
+import com.betterblue.kit.regions.ccsp.ccspString
 import com.betterblue.kit.util.BluelinkDates
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
@@ -46,11 +46,12 @@ internal fun KiaEuropeClient.parseAuthToken(data: ByteArray, isRefresh: Boolean)
         )
     }
 
-    val refreshToken = if (isRefresh) {
-        json["refresh_token"].asStringOrNull() ?: config.refreshToken ?: ""
-    } else {
-        config.refreshToken ?: ""
-    }
+    val refreshToken =
+        if (isRefresh) {
+            json["refresh_token"].asStringOrNull() ?: config.refreshToken ?: ""
+        } else {
+            config.refreshToken ?: ""
+        }
 
     return AuthToken(
         accessToken = accessToken,
@@ -61,22 +62,25 @@ internal fun KiaEuropeClient.parseAuthToken(data: ByteArray, isRefresh: Boolean)
 
 internal fun KiaEuropeClient.parseVehiclesResponse(data: ByteArray): List<Vehicle> {
     val json = ApiClientBase.parseJsonObject(data)
-    val vehicleArray = (json["resMsg"] as? JsonObject)?.get("vehicles") as? JsonArray
-        ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
+    val vehicleArray =
+        (json["resMsg"] as? JsonObject)?.get("vehicles") as? JsonArray
+            ?: throw ApiException.logError("Invalid vehicles response", apiName = apiName)
 
     return vehicleArray.mapNotNull { element ->
         val vehicleData = element as? JsonObject ?: return@mapNotNull null
         val vehicleId = vehicleData["vehicleId"].asStringOrNull() ?: return@mapNotNull null
         val vin = vehicleData["vin"].asStringOrNull() ?: return@mapNotNull null
-        val nickname = vehicleData["nickname"].asStringOrNull()
-            ?: vehicleData["vehicleName"].asStringOrNull()
-            ?: return@mapNotNull null
+        val nickname =
+            vehicleData["nickname"].asStringOrNull()
+                ?: vehicleData["vehicleName"].asStringOrNull()
+                ?: return@mapNotNull null
 
-        val fuelType = when (ccspString(vehicleData, "type") ?: "") {
-            "E", "EV" -> FuelType.ELECTRIC
-            "P", "PE" -> FuelType.PHEV
-            else -> FuelType.GAS
-        }
+        val fuelType =
+            when (ccspString(vehicleData, "type") ?: "") {
+                "E", "EV" -> FuelType.ELECTRIC
+                "P", "PE" -> FuelType.PHEV
+                else -> FuelType.GAS
+            }
         val ccs2 = ccspBool(vehicleData, "ccuCCS2ProtocolSupport")
 
         Vehicle(
@@ -98,12 +102,14 @@ internal fun KiaEuropeClient.parseVehicleStatusResponse(
     vehicle: Vehicle,
 ): VehicleStatus {
     val statusJson = ApiClientBase.parseJsonObject(data)
-    val resMsg = statusJson["resMsg"] as? JsonObject
-        ?: throw ApiException.logError("Invalid status response", apiName = apiName)
+    val resMsg =
+        statusJson["resMsg"] as? JsonObject
+            ?: throw ApiException.logError("Invalid status response", apiName = apiName)
 
-    val parkData: JsonObject = locationData
-        ?.let { ApiClientBase.parseJsonObject(it)["resMsg"] as? JsonObject }
-        ?: JsonObject(emptyMap())
+    val parkData: JsonObject =
+        locationData
+            ?.let { ApiClientBase.parseJsonObject(it)["resMsg"] as? JsonObject }
+            ?: JsonObject(emptyMap())
 
     val ccs2 = vehicle.marketOptions.ccs2Supported
     val pathMap = CcspKeyPathMap(if (ccs2) CcspApiProfile.CCS2 else CcspApiProfile.LEGACY)
@@ -117,10 +123,11 @@ internal fun KiaEuropeClient.parseVehicleStatusResponse(
             ?.let { CcspDates.parse(it, BluelinkDates.BERLIN) }
             ?: Instant.ofEpochMilli(ccspDouble(resMsg, pathMap[CcspResponseKey.SYNC_DATE]).toLong())
 
-    val odometer = Distance(
-        length = ccspDouble(vehicleData, pathMap[CcspResponseKey.ODO]),
-        units = Distance.Units.fromInt(1),
-    )
+    val odometer =
+        Distance(
+            length = ccspDouble(vehicleData, pathMap[CcspResponseKey.ODO]),
+            units = Distance.Units.fromInt(1),
+        )
 
     return VehicleStatus(
         vin = vehicle.vin,
@@ -171,18 +178,20 @@ private fun parseEvStatus(vehicleState: JsonObject, pathMap: CcspKeyPathMap): Ve
 
     // The EU response keys split charge power into Std + Fst — take whichever
     // has a value (matches the Hyundai EU parser).
-    val chargePower = maxOf(
-        ccspDouble(vehicleState, pathMap[CcspResponseKey.CHARGE_POWER_STD]),
-        ccspDouble(vehicleState, pathMap[CcspResponseKey.CHARGE_POWER_FST]),
-    )
+    val chargePower =
+        maxOf(
+            ccspDouble(vehicleState, pathMap[CcspResponseKey.CHARGE_POWER_STD]),
+            ccspDouble(vehicleState, pathMap[CcspResponseKey.CHARGE_POWER_FST]),
+        )
 
     return VehicleStatus.EvStatus(
         charging = isCharging,
         chargeSpeed = chargePower,
-        evRange = VehicleStatus.FuelRange(
-            range = Distance(estimatedRange, Distance.Units.fromInt(driveUnit)),
-            percentage = batterySoc,
-        ),
+        evRange =
+            VehicleStatus.FuelRange(
+                range = Distance(estimatedRange, Distance.Units.fromInt(driveUnit)),
+                percentage = batterySoc,
+            ),
         plugType = VehicleStatus.PlugType.fromBatteryPlugin(plugType),
         chargeTimeSeconds = (60 * remainChargeTime).toLong(),
         targetSocAC = targetAc,
@@ -215,10 +224,11 @@ private fun parseLockStatus(vehicleState: JsonObject, pathMap: CcspKeyPathMap): 
 }
 
 private fun parseClimateStatus(vehicleState: JsonObject, pathMap: CcspKeyPathMap): VehicleStatus.ClimateStatus {
-    val temperature = Temperature.fromApi(
-        units = ccspStrictInt(vehicleState, pathMap[CcspResponseKey.TEMP_UNIT]) ?: 0,
-        value = ccspString(vehicleState, pathMap[CcspResponseKey.AIR_TEMP]),
-    )
+    val temperature =
+        Temperature.fromApi(
+            units = ccspStrictInt(vehicleState, pathMap[CcspResponseKey.TEMP_UNIT]) ?: 0,
+            value = ccspString(vehicleState, pathMap[CcspResponseKey.AIR_TEMP]),
+        )
     return VehicleStatus.ClimateStatus(
         defrostOn = ccspBool(vehicleState, pathMap[CcspResponseKey.DEFROST_ON]),
         airControlOn = (ccspStrictInt(vehicleState, pathMap[CcspResponseKey.AIRCON_SPEED]) ?: 0) > 0,
@@ -236,20 +246,23 @@ private fun parseLocation(
     // without ".SSS") parse via CcspDates. Legacy times are local (vehicle)
     // wall time — read as Europe/Berlin; CCS2 are UTC.
     val zone = if (pathMap.profile == CcspApiProfile.LEGACY) BluelinkDates.BERLIN else ZoneOffset.UTC
-    val locationDate = CcspDates.parse(
-        ccspString(vehicleState, pathMap[CcspResponseKey.LOCATION_DATE]),
-        zone,
-    )
+    val locationDate =
+        CcspDates.parse(
+            ccspString(vehicleState, pathMap[CcspResponseKey.LOCATION_DATE]),
+            zone,
+        )
     val parkDate = CcspDates.parse(ccspString(park, pathMap[CcspResponseKey.PARK_DATE]), zone)
 
-    val parkLocation = VehicleStatus.Location(
-        latitude = ccspDouble(park, pathMap[CcspResponseKey.PARK_LAT]),
-        longitude = ccspDouble(park, pathMap[CcspResponseKey.PARK_LON]),
-    )
-    val statusLocation = VehicleStatus.Location(
-        latitude = ccspDouble(vehicleState, pathMap[CcspResponseKey.LOCATION_LAT]),
-        longitude = ccspDouble(vehicleState, pathMap[CcspResponseKey.LOCATION_LON]),
-    )
+    val parkLocation =
+        VehicleStatus.Location(
+            latitude = ccspDouble(park, pathMap[CcspResponseKey.PARK_LAT]),
+            longitude = ccspDouble(park, pathMap[CcspResponseKey.PARK_LON]),
+        )
+    val statusLocation =
+        VehicleStatus.Location(
+            latitude = ccspDouble(vehicleState, pathMap[CcspResponseKey.LOCATION_LAT]),
+            longitude = ccspDouble(vehicleState, pathMap[CcspResponseKey.LOCATION_LON]),
+        )
 
     // Prefer the park endpoint when it has coordinates (hasCoordinates treats
     // the (0,0) "no fix" sentinel as absent) and is at least as recent as the

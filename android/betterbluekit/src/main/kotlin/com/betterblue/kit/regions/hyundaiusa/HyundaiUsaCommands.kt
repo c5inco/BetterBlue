@@ -10,19 +10,36 @@ import kotlinx.serialization.json.put
 import kotlin.math.roundToInt
 
 internal fun HyundaiUsaClient.commandUrl(command: VehicleCommand, vehicle: Vehicle): String {
-    val path = when (command) {
-        VehicleCommand.Unlock -> "ac/v2/rcs/rdo/on"
-        VehicleCommand.Lock -> "ac/v2/rcs/rdo/off"
-        is VehicleCommand.StartClimate ->
-            if (vehicle.fuelType.hasElectricCapability) "ac/v2/evc/fatc/start" else "ac/v2/rcs/rsc/start"
+    val path =
+        when (command) {
+            VehicleCommand.Unlock -> {
+                "ac/v2/rcs/rdo/on"
+            }
 
-        VehicleCommand.StopClimate ->
-            if (vehicle.fuelType.hasElectricCapability) "ac/v2/evc/fatc/stop" else "ac/v2/rcs/rsc/stop"
+            VehicleCommand.Lock -> {
+                "ac/v2/rcs/rdo/off"
+            }
 
-        VehicleCommand.StartCharge -> "ac/v2/evc/charge/start"
-        VehicleCommand.StopCharge -> "ac/v2/evc/charge/stop"
-        is VehicleCommand.SetTargetSoc -> "ac/v2/evc/charge/targetsoc/set"
-    }
+            is VehicleCommand.StartClimate -> {
+                if (vehicle.fuelType.hasElectricCapability) "ac/v2/evc/fatc/start" else "ac/v2/rcs/rsc/start"
+            }
+
+            VehicleCommand.StopClimate -> {
+                if (vehicle.fuelType.hasElectricCapability) "ac/v2/evc/fatc/stop" else "ac/v2/rcs/rsc/stop"
+            }
+
+            VehicleCommand.StartCharge -> {
+                "ac/v2/evc/charge/start"
+            }
+
+            VehicleCommand.StopCharge -> {
+                "ac/v2/evc/charge/stop"
+            }
+
+            is VehicleCommand.SetTargetSoc -> {
+                "ac/v2/evc/charge/targetsoc/set"
+            }
+        }
     return "$baseUrl/$path"
 }
 
@@ -33,9 +50,10 @@ internal fun HyundaiUsaClient.commandBody(command: VehicleCommand, vehicle: Vehi
             // Hyundai US always expects Fahrenheit (unit 1) — matches
             // HyundaiBlueLinkApiUSA.start_climate. Sending the preset's own
             // unit produced unit 0 + a Celsius value.
-            val fahrenheit = options.temperature.units
-                .convert(options.temperature.value, Temperature.Units.FAHRENHEIT)
-                .roundToInt()
+            val fahrenheit =
+                options.temperature.units
+                    .convert(options.temperature.value, Temperature.Units.FAHRENHEIT)
+                    .roundToInt()
 
             if (vehicle.fuelType.hasElectricCapability) {
                 buildJsonObject {
@@ -87,27 +105,33 @@ internal fun HyundaiUsaClient.commandBody(command: VehicleCommand, vehicle: Vehi
 
         // Hyundai US start charge takes no body (just headers). `chargeRatio`
         // is the Kia US shape — wrong here.
-        VehicleCommand.StartCharge -> buildJsonObject {}
-
-        is VehicleCommand.SetTargetSoc -> buildJsonObject {
-            put(
-                "targetSOClist",
-                buildJsonArray {
-                    add(
-                        buildJsonObject {
-                            put("targetSOClevel", command.acLevel)
-                            put("plugType", 1)
-                        },
-                    )
-                    add(
-                        buildJsonObject {
-                            put("targetSOClevel", command.dcLevel)
-                            put("plugType", 0)
-                        },
-                    )
-                },
-            )
+        VehicleCommand.StartCharge -> {
+            buildJsonObject {}
         }
 
-        else -> buildJsonObject {}
+        is VehicleCommand.SetTargetSoc -> {
+            buildJsonObject {
+                put(
+                    "targetSOClist",
+                    buildJsonArray {
+                        add(
+                            buildJsonObject {
+                                put("targetSOClevel", command.acLevel)
+                                put("plugType", 1)
+                            },
+                        )
+                        add(
+                            buildJsonObject {
+                                put("targetSOClevel", command.dcLevel)
+                                put("plugType", 0)
+                            },
+                        )
+                    },
+                )
+            }
+        }
+
+        else -> {
+            buildJsonObject {}
+        }
     }

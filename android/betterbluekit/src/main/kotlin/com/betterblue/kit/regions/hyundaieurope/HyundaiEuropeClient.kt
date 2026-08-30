@@ -35,8 +35,10 @@ import java.util.UUID
  * Based on https://github.com/andyfase/egmp-bluelink-scriptable and
  * hyundai_kia_connect_api's ApiImplType1.
  */
-class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
-
+class HyundaiEuropeClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config),
+    ApiClient {
     internal var commandToken: String = ""
     internal var commandTokenExpiration: Instant = Instant.now()
 
@@ -59,19 +61,20 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         val refreshToken = config.refreshToken
         if (!refreshToken.isNullOrEmpty()) {
             BBLogger.info(BBLogCategory.AUTH, "HyundaiEurope: Starting login flow (refresh token)")
-            val token = try {
-                getAccessTokenFromRefreshToken()
-            } catch (e: ApiException) {
-                // A dead/rotated refresh token isn't fatal: clear it and
-                // recurse into the username/password flow (once — the
-                // recursion takes the else-branch because the stored token
-                // is now empty).
-                if (e.errorType == ApiErrorType.INVALID_CREDENTIALS && password.isNotEmpty()) {
-                    config = config.copy(refreshToken = "")
-                    return login()
+            val token =
+                try {
+                    getAccessTokenFromRefreshToken()
+                } catch (e: ApiException) {
+                    // A dead/rotated refresh token isn't fatal: clear it and
+                    // recurse into the username/password flow (once — the
+                    // recursion takes the else-branch because the stored token
+                    // is now empty).
+                    if (e.errorType == ApiErrorType.INVALID_CREDENTIALS && password.isNotEmpty()) {
+                        config = config.copy(refreshToken = "")
+                        return login()
+                    }
+                    throw e
                 }
-                throw e
-            }
             BBLogger.info(BBLogCategory.AUTH, "HyundaiEurope: Login completed successfully")
             return token
         }
@@ -89,19 +92,21 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
     /** Exchange the signin redirect's `code` for access + refresh tokens. */
     private suspend fun exchangeForToken(code: String): AuthToken {
-        val result = performRequest(
-            url = "$authBaseUrl/auth/api/v2/user/oauth2/token",
-            method = HttpMethod.POST,
-            headers = loginHeaders(),
-            body = buildJsonObject {
-                put("grant_type", "authorization_code")
-                put("code", code)
-                put("redirect_uri", "$baseUrl/api/v1/user/oauth2/token")
-                put("client_id", CLIENT_ID)
-                put("client_secret", CLIENT_SECRET)
-            }.toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.LOGIN,
-        )
+        val result =
+            performRequest(
+                url = "$authBaseUrl/auth/api/v2/user/oauth2/token",
+                method = HttpMethod.POST,
+                headers = loginHeaders(),
+                body =
+                    buildJsonObject {
+                        put("grant_type", "authorization_code")
+                        put("code", code)
+                        put("redirect_uri", "$baseUrl/api/v1/user/oauth2/token")
+                        put("client_id", CLIENT_ID)
+                        put("client_secret", CLIENT_SECRET)
+                    }.toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.LOGIN,
+            )
         return parseAuthToken(result.body, isRefresh = true)
     }
 
@@ -113,22 +118,24 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
      */
     private suspend fun signin(): String {
         val state = UUID.randomUUID().toString().uppercase()
-        val result = performRequest(
-            url = "$authBaseUrl/auth/account/signin",
-            method = HttpMethod.POST,
-            headers = loginHeaders(),
-            body = buildJsonObject {
-                put("client_id", CLIENT_ID)
-                put("encryptedPassword", "false")
-                put("username", username)
-                put("password", password)
-                put("redirect_uri", "$baseUrl/api/v1/user/oauth2/token")
-                put("state", state)
-                put("remember_me", "false")
-            }.toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.LOGIN,
-            validateResponse = false,
-        )
+        val result =
+            performRequest(
+                url = "$authBaseUrl/auth/account/signin",
+                method = HttpMethod.POST,
+                headers = loginHeaders(),
+                body =
+                    buildJsonObject {
+                        put("client_id", CLIENT_ID)
+                        put("encryptedPassword", "false")
+                        put("username", username)
+                        put("password", password)
+                        put("redirect_uri", "$baseUrl/api/v1/user/oauth2/token")
+                        put("state", state)
+                        put("remember_me", "false")
+                    }.toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.LOGIN,
+                validateResponse = false,
+            )
 
         val finalUrl = result.finalUrl.toHttpUrlOrNull() ?: return ""
         // State validation — no CSRF possible anymore.
@@ -141,19 +148,21 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         // Swift sends this via a raw URLSession call with only a Content-Type
         // header and no status validation — parseAuthToken's
         // invalidCredentials is what drives the fall-back-to-password flow.
-        val result = performRequest(
-            url = "$authBaseUrl/auth/api/v2/user/oauth2/token",
-            method = HttpMethod.POST,
-            headers = mapOf("Content-Type" to "application/json"),
-            body = buildJsonObject {
-                put("grant_type", "refresh_token")
-                put("refresh_token", config.refreshToken ?: "")
-                put("client_id", CLIENT_ID)
-                put("client_secret", CLIENT_SECRET)
-            }.toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.LOGIN,
-            validateResponse = false,
-        )
+        val result =
+            performRequest(
+                url = "$authBaseUrl/auth/api/v2/user/oauth2/token",
+                method = HttpMethod.POST,
+                headers = mapOf("Content-Type" to "application/json"),
+                body =
+                    buildJsonObject {
+                        put("grant_type", "refresh_token")
+                        put("refresh_token", config.refreshToken ?: "")
+                        put("client_id", CLIENT_ID)
+                        put("client_secret", CLIENT_SECRET)
+                    }.toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.LOGIN,
+                validateResponse = false,
+            )
         return parseAuthToken(result.body, isRefresh = false)
     }
 
@@ -161,28 +170,32 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
     override suspend fun registerDevice(): String? {
         val stamp = generateStamp()
-        val (json, _) = performJsonRequest(
-            url = "$baseUrl/api/v1/spa/notifications/register",
-            method = HttpMethod.POST,
-            headers = mapOf(
-                "ccsp-service-id" to CLIENT_ID,
-                "ccsp-application-id" to APP_ID,
-                "Stamp" to stamp,
-                "Content-Type" to "application/json;charset=UTF-8",
-                "Host" to apiHost,
-                "User-Agent" to "okhttp/3.14.9",
-            ),
-            body = buildJsonObject {
-                put("pushRegId", stamp)
-                put("pushType", "GCM")
-                put("uuid", UUID.randomUUID().toString().uppercase())
-            },
-            requestType = HttpRequestType.LOGIN,
-            validateResponse = false,
-        )
+        val (json, _) =
+            performJsonRequest(
+                url = "$baseUrl/api/v1/spa/notifications/register",
+                method = HttpMethod.POST,
+                headers =
+                    mapOf(
+                        "ccsp-service-id" to CLIENT_ID,
+                        "ccsp-application-id" to APP_ID,
+                        "Stamp" to stamp,
+                        "Content-Type" to "application/json;charset=UTF-8",
+                        "Host" to apiHost,
+                        "User-Agent" to "okhttp/3.14.9",
+                    ),
+                body =
+                    buildJsonObject {
+                        put("pushRegId", stamp)
+                        put("pushType", "GCM")
+                        put("uuid", UUID.randomUUID().toString().uppercase())
+                    },
+                requestType = HttpRequestType.LOGIN,
+                validateResponse = false,
+            )
 
-        val deviceId = (json["resMsg"] as? JsonObject)?.get("deviceId").asStringOrNull()
-            ?: throw ApiException("Failed to get device id", apiName = apiName)
+        val deviceId =
+            (json["resMsg"] as? JsonObject)?.get("deviceId").asStringOrNull()
+                ?: throw ApiException("Failed to get device id", apiName = apiName)
         config = config.copy(deviceId = deviceId)
         return deviceId
     }
@@ -202,16 +215,18 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
         // Routed through performJsonRequest so the PIN/control-token request
         // is captured in the HTTP logs and its status validated.
-        val (json, _) = performJsonRequest(
-            url = "$baseUrl/api/v1/user/pin?token=",
-            method = HttpMethod.PUT,
-            headers = authorizedHeaders(authToken),
-            body = buildJsonObject {
-                put("deviceId", config.deviceId ?: "")
-                put("pin", pin)
-            },
-            requestType = HttpRequestType.SEND_COMMAND,
-        )
+        val (json, _) =
+            performJsonRequest(
+                url = "$baseUrl/api/v1/user/pin?token=",
+                method = HttpMethod.PUT,
+                headers = authorizedHeaders(authToken),
+                body =
+                    buildJsonObject {
+                        put("deviceId", config.deviceId ?: "")
+                        put("pin", pin)
+                    },
+                requestType = HttpRequestType.SEND_COMMAND,
+            )
 
         val token = json["controlToken"].asStringOrNull()
         val expires = json["expiresTime"].asIntOrNull()
@@ -228,12 +243,13 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
     // Vehicles
 
     override suspend fun fetchVehicles(authToken: AuthToken): List<Vehicle> {
-        val result = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken),
-            requestType = HttpRequestType.FETCH_VEHICLES,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken),
+                requestType = HttpRequestType.FETCH_VEHICLES,
+            )
         return parseVehiclesResponse(result.body)
     }
 
@@ -252,21 +268,23 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         }
 
         val endpoint = if (ccs2) "/ccs2/carstatus/latest" else "/status/latest"
-        val statusResult = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}$endpoint",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val statusResult =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}$endpoint",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
-        val parkResult = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/location/park",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val parkResult =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/location/park",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
         return parseVehicleStatusResponse(statusResult.body, parkResult.body, vehicle)
     }
@@ -302,12 +320,13 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
         // CCS2 cars authenticate commands with the PIN-derived control token;
         // legacy cars use the normal access token and have no PIN step.
-        val headers = if (ccs2) {
-            setCommandToken(authToken)
-            commandHeaders(authToken, ccs2 = true)
-        } else {
-            authorizedHeaders(authToken, ccs2 = false)
-        }
+        val headers =
+            if (ccs2) {
+                setCommandToken(authToken)
+                commandHeaders(authToken, ccs2 = true)
+            } else {
+                authorizedHeaders(authToken, ccs2 = false)
+            }
 
         performJsonRequest(
             url = url,
@@ -326,14 +345,15 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
 
     override suspend fun fetchEvTripSummary(vehicle: Vehicle, authToken: AuthToken): List<EVTripSummary>? {
         val ccs2 = vehicle.marketOptions.ccs2Supported
-        val result = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/drvhistory",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            body = buildJsonObject { put("periodTarget", 0) }.toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.FETCH_EV_TRIP_SUMMARY,
-            vin = vehicle.vin,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/drvhistory",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                body = buildJsonObject { put("periodTarget", 0) }.toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.FETCH_EV_TRIP_SUMMARY,
+                vin = vehicle.vin,
+            )
         return parseEvTripSummaryResponse(result.body, vehicle)
     }
 
@@ -343,17 +363,19 @@ class HyundaiEuropeClient(config: ApiClientConfig) : ApiClientBase(config), ApiC
         date: LocalDate,
     ): List<EVTripInfo>? {
         val ccs2 = vehicle.marketOptions.ccs2Supported
-        val result = performRequest(
-            url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/tripinfo",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, ccs2 = ccs2),
-            body = buildJsonObject {
-                put("tripPeriodType", 1)
-                put("setTripDay", BluelinkDates.formatDay(date))
-            }.toString().toByteArray(Charsets.UTF_8),
-            requestType = HttpRequestType.FETCH_EV_TRIP_INFO,
-            vin = vehicle.vin,
-        )
+        val result =
+            performRequest(
+                url = "$baseUrl/api/v1/spa/vehicles/${vehicle.regId}/tripinfo",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, ccs2 = ccs2),
+                body =
+                    buildJsonObject {
+                        put("tripPeriodType", 1)
+                        put("setTripDay", BluelinkDates.formatDay(date))
+                    }.toString().toByteArray(Charsets.UTF_8),
+                requestType = HttpRequestType.FETCH_EV_TRIP_INFO,
+                vin = vehicle.vin,
+            )
         return parseIndividualTripsResponse(result.body)
     }
 

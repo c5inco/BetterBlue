@@ -8,7 +8,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 
 class BluelinkDatesTest {
-
     @Test
     fun `basic14 in UTC`() {
         assertEquals(

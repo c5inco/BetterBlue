@@ -38,7 +38,6 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
 @Module
 @InstallIn(SingletonComponent::class)
 object AppProvidesModule {
-
     @Provides
     @Singleton
     @AppScope
@@ -46,7 +45,9 @@ object AppProvidesModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
+    fun provideDatabase(
+        @ApplicationContext context: Context,
+    ): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, AppDatabase.NAME).build()
 
     @Provides
@@ -63,14 +64,15 @@ object AppProvidesModule {
 
     @Provides
     @Singleton
-    fun provideDataStore(@ApplicationContext context: Context): DataStore<Preferences> =
+    fun provideDataStore(
+        @ApplicationContext context: Context,
+    ): DataStore<Preferences> =
         context.settingsDataStore
 }
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class AppBindsModule {
-
     @Binds
     @Singleton
     abstract fun bindCredentialCipher(impl: KeystoreCredentialCipher): CredentialCipher

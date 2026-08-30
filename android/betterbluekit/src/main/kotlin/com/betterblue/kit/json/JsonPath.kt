@@ -16,11 +16,12 @@ fun JsonElement.atPath(path: String): JsonElement? {
     var current: JsonElement = this
     for (segment in path.split('.')) {
         val index = segment.toIntOrNull()
-        current = when {
-            index != null && current is JsonArray -> current.getOrNull(index) ?: return null
-            current is JsonObject -> current[segment] ?: return null
-            else -> return null
-        }
+        current =
+            when {
+                index != null && current is JsonArray -> current.getOrNull(index) ?: return null
+                current is JsonObject -> current[segment] ?: return null
+                else -> return null
+            }
     }
     return current
 }

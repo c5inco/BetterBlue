@@ -1,0 +1,20 @@
+root = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+max_line_length = 120
+
+# Composable functions are PascalCase by convention.
+ktlint_function_naming_ignore_when_annotated_with = Composable
+
+# Compose builders nest deeply; the wrapping rules fight readable trailing
+# lambdas more than they help.
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_function-expression-body = disabled
+
+# Re-indents the entire body of a class with a multiline constructor
+# signature; churn without benefit.
+ktlint_standard_class-signature = disabled

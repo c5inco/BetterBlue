@@ -16,12 +16,13 @@ import com.betterblue.kit.model.VehicleStatus
  *   - gasRange only       ⇒ pure ICE
  *   - neither             ⇒ no signal
  */
-fun inferFuelType(status: VehicleStatus): FuelType? = when {
-    status.evStatus != null && status.gasRange != null -> FuelType.PHEV
-    status.evStatus != null -> FuelType.ELECTRIC
-    status.gasRange != null -> FuelType.GAS
-    else -> null
-}
+fun inferFuelType(status: VehicleStatus): FuelType? =
+    when {
+        status.evStatus != null && status.gasRange != null -> FuelType.PHEV
+        status.evStatus != null -> FuelType.ELECTRIC
+        status.gasRange != null -> FuelType.GAS
+        else -> null
+    }
 
 /**
  * True when [to] is strictly more specific than [from] along the
@@ -31,14 +32,15 @@ fun inferFuelType(status: VehicleStatus): FuelType? = when {
  * a status response can't demote a vehicle we already know is a PHEV back to
  * electric or gas.
  */
-fun isFuelTypeUpgrade(from: FuelType, to: FuelType): Boolean = when (from to to) {
-    FuelType.GAS to FuelType.ELECTRIC,
-    FuelType.GAS to FuelType.PHEV,
-    FuelType.ELECTRIC to FuelType.PHEV,
-    -> true
+fun isFuelTypeUpgrade(from: FuelType, to: FuelType): Boolean =
+    when (from to to) {
+        FuelType.GAS to FuelType.ELECTRIC,
+        FuelType.GAS to FuelType.PHEV,
+        FuelType.ELECTRIC to FuelType.PHEV,
+        -> true
 
-    else -> false
-}
+        else -> false
+    }
 
 /**
  * The fuel type to store after applying a status update: the inferred type

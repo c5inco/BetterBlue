@@ -19,25 +19,29 @@ internal fun KiaEuropeClient.commandPathAndBody(
 ): Pair<String, JsonObject> {
     val deviceId = config.deviceId ?: ""
     return when (command) {
-        VehicleCommand.Lock ->
+        VehicleCommand.Lock -> {
             if (ccs2) {
                 "ccs2/control/door" to buildJsonObject { put("command", "close") }
             } else {
-                "control/door" to buildJsonObject {
-                    put("action", "close")
-                    put("deviceId", deviceId)
-                }
+                "control/door" to
+                    buildJsonObject {
+                        put("action", "close")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        VehicleCommand.Unlock ->
+        VehicleCommand.Unlock -> {
             if (ccs2) {
                 "ccs2/control/door" to buildJsonObject { put("command", "open") }
             } else {
-                "control/door" to buildJsonObject {
-                    put("action", "open")
-                    put("deviceId", deviceId)
-                }
+                "control/door" to
+                    buildJsonObject {
+                        put("action", "open")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
         is VehicleCommand.StartClimate -> {
             // Mirrors the Swift client: Kia EU always uses the CCS2 climate
@@ -46,76 +50,85 @@ internal fun KiaEuropeClient.commandPathAndBody(
             // — sending 22.22 (linear F→C of 72°F) silently no-ops on the
             // car, so hvacConvert snaps via the EU lookup table.
             val options = command.options
-            val tempCelsius = Temperature.hvacConvert(
-                options.temperature.value,
-                sourceUnits = options.temperature.units,
-                targetUnits = Temperature.Units.CELSIUS,
-                table = HvacTemperatureTable.EUROPEAN,
-            )
+            val tempCelsius =
+                Temperature.hvacConvert(
+                    options.temperature.value,
+                    sourceUnits = options.temperature.units,
+                    targetUnits = Temperature.Units.CELSIUS,
+                    table = HvacTemperatureTable.EUROPEAN,
+                )
             "ccs2/control/temperature" to euStartClimateCcs2Body(options, tempCelsius, drvSeatLoc)
         }
 
-        VehicleCommand.StopClimate ->
+        VehicleCommand.StopClimate -> {
             if (ccs2) {
                 "ccs2/control/temperature" to buildJsonObject { put("command", "stop") }
             } else {
-                "control/temperature" to buildJsonObject {
-                    put("action", "stop")
-                    put("hvacType", 0)
-                    put(
-                        "options",
-                        buildJsonObject {
-                            put("defrost", true)
-                            put("heating1", 1)
-                        },
-                    )
-                    put("tempCode", "10H")
-                    put("unit", "C")
-                }
+                "control/temperature" to
+                    buildJsonObject {
+                        put("action", "stop")
+                        put("hvacType", 0)
+                        put(
+                            "options",
+                            buildJsonObject {
+                                put("defrost", true)
+                                put("heating1", 1)
+                            },
+                        )
+                        put("tempCode", "10H")
+                        put("unit", "C")
+                    }
             }
+        }
 
-        VehicleCommand.StartCharge ->
+        VehicleCommand.StartCharge -> {
             if (ccs2) {
                 "ccs2/control/charge" to buildJsonObject { put("command", "start") }
             } else {
-                "control/charge" to buildJsonObject {
-                    put("action", "start")
-                    put("deviceId", deviceId)
-                }
+                "control/charge" to
+                    buildJsonObject {
+                        put("action", "start")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        VehicleCommand.StopCharge ->
+        VehicleCommand.StopCharge -> {
             if (ccs2) {
                 "ccs2/control/charge" to buildJsonObject { put("command", "stop") }
             } else {
-                "control/charge" to buildJsonObject {
-                    put("action", "stop")
-                    put("deviceId", deviceId)
-                }
+                "control/charge" to
+                    buildJsonObject {
+                        put("action", "stop")
+                        put("deviceId", deviceId)
+                    }
             }
+        }
 
-        is VehicleCommand.SetTargetSoc ->
+        is VehicleCommand.SetTargetSoc -> {
             // plugType 0 = DC fast charge, 1 = AC — per ApiImplType1
             // set_charge_limits. The mapping was once inverted, so users set
             // the AC and DC limits onto the opposite plug type.
-            "charge/target" to buildJsonObject {
-                put(
-                    "targetSOClist",
-                    buildJsonArray {
-                        add(
-                            buildJsonObject {
-                                put("targetSOClevel", command.dcLevel)
-                                put("plugType", 0)
-                            },
-                        )
-                        add(
-                            buildJsonObject {
-                                put("targetSOClevel", command.acLevel)
-                                put("plugType", 1)
-                            },
-                        )
-                    },
-                )
-            }
+            "charge/target" to
+                buildJsonObject {
+                    put(
+                        "targetSOClist",
+                        buildJsonArray {
+                            add(
+                                buildJsonObject {
+                                    put("targetSOClevel", command.dcLevel)
+                                    put("plugType", 0)
+                                },
+                            )
+                            add(
+                                buildJsonObject {
+                                    put("targetSOClevel", command.acLevel)
+                                    put("plugType", 1)
+                                },
+                            )
+                        },
+                    )
+                }
+        }
     }
 }

@@ -24,7 +24,6 @@ data class DebugConfiguration(
      * real failure.
      */
     val shouldFailSurroundViewUpload: Boolean = false,
-
     // Command-specific failures
     val shouldFailLock: Boolean = false,
     val shouldFailUnlock: Boolean = false,
@@ -32,18 +31,18 @@ data class DebugConfiguration(
     val shouldFailStopClimate: Boolean = false,
     val shouldFailStartCharge: Boolean = false,
     val shouldFailStopCharge: Boolean = false,
-
     // Custom error messages
     val customCredentialErrorMessage: String = "Invalid credentials",
     val customPinErrorMessage: String = "Invalid PIN",
 ) {
-    fun shouldFailCommand(command: VehicleCommand): Boolean = when (command) {
-        VehicleCommand.Lock -> shouldFailLock
-        VehicleCommand.Unlock -> shouldFailUnlock
-        is VehicleCommand.StartClimate -> shouldFailStartClimate
-        VehicleCommand.StopClimate -> shouldFailStopClimate
-        VehicleCommand.StartCharge -> shouldFailStartCharge
-        VehicleCommand.StopCharge -> shouldFailStopCharge
-        is VehicleCommand.SetTargetSoc -> false
-    }
+    fun shouldFailCommand(command: VehicleCommand): Boolean =
+        when (command) {
+            VehicleCommand.Lock -> shouldFailLock
+            VehicleCommand.Unlock -> shouldFailUnlock
+            is VehicleCommand.StartClimate -> shouldFailStartClimate
+            VehicleCommand.StopClimate -> shouldFailStopClimate
+            VehicleCommand.StartCharge -> shouldFailStartCharge
+            VehicleCommand.StopCharge -> shouldFailStopCharge
+            is VehicleCommand.SetTargetSoc -> false
+        }
 }

@@ -13,7 +13,6 @@ import java.util.Base64
  * can't quietly redefine "correct".
  */
 class CcspStampTest {
-
     private val hyundaiAppId = "014d2225-8495-4735-812d-2616334fd15d"
     private val hyundaiCfb = "RFtoRq/vDXJmRndoZaZQyfOot7OrIqGVFj96iY2WL3yyH5Z/pUvlUhqmCxD2t+D65SQ="
     private val kiaAppId = "a2b8469b-30a3-4361-8e13-6fceea8fbe74"
@@ -54,9 +53,10 @@ class CcspStampTest {
         val stamp = CcspStamp.generateStamp(hyundaiAppId, hyundaiCfb, epoch)
         val stampBytes = Base64.getDecoder().decode(stamp)
         val cfbBytes = Base64.getDecoder().decode(hyundaiCfb)
-        val recovered = ByteArray(stampBytes.size) { i ->
-            (stampBytes[i].toInt() xor cfbBytes[i].toInt()).toByte()
-        }
+        val recovered =
+            ByteArray(stampBytes.size) { i ->
+                (stampBytes[i].toInt() xor cfbBytes[i].toInt()).toByte()
+            }
         assertEquals("$hyundaiAppId:$epoch", recovered.toString(Charsets.UTF_8))
     }
 

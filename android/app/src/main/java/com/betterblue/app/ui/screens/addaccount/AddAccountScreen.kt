@@ -1,6 +1,7 @@
 package com.betterblue.app.ui.screens.addaccount
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -18,7 +19,6 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Sms
 import androidx.compose.material.icons.filled.Warning
-import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -91,10 +91,11 @@ fun AddAccountScreen(
     ) { padding ->
         Box(modifier = Modifier.fillMaxSize().padding(padding)) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                modifier =
+                    Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 ServiceConfigurationSection(state, viewModel)
@@ -162,8 +163,9 @@ private fun ServiceConfigurationSection(state: AddAccountUiState, viewModel: Add
         } else if (!supported) {
             ErrorBox(
                 headline = "${state.brand.displayName} ${state.region.displayName} is unsupported.",
-                detail = "If you'd like to help bring BetterBlue to your region, please consider " +
-                    "contributing to the open source project.",
+                detail =
+                    "If you'd like to help bring BetterBlue to your region, please consider " +
+                        "contributing to the open source project.",
                 color = MaterialTheme.colorScheme.tertiary,
                 icon = Icons.Filled.Warning,
             )
@@ -261,13 +263,14 @@ private fun AccountInformationSection(state: AddAccountUiState, viewModel: AddAc
         )
     }
 
-    val footer = if (state.brand == Brand.FAKE) {
-        "Using test account - fake data will be used"
-    } else {
-        "BetterBlue requires an active Hyundai BlueLink or Kia Connect subscription. " +
-            "Credentials are stored encrypted on this device. BetterBlue is fully open source: " +
-            "github.com/schmidtwmark/BetterBlue"
-    }
+    val footer =
+        if (state.brand == Brand.FAKE) {
+            "Using test account - fake data will be used"
+        } else {
+            "BetterBlue requires an active Hyundai BlueLink or Kia Connect subscription. " +
+                "Credentials are stored encrypted on this device. BetterBlue is fully open source: " +
+                "github.com/schmidtwmark/BetterBlue"
+        }
     Text(footer, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
@@ -276,10 +279,11 @@ private fun AccountInformationSection(state: AddAccountUiState, viewModel: AddAc
 private fun MfaFlowSheet(state: MfaUiState, viewModel: AddAccountViewModel) {
     ModalBottomSheet(onDismissRequest = viewModel::cancelMfa) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 32.dp),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp)
+                    .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             when (state.step) {
@@ -366,7 +370,9 @@ private fun MfaFlowSheet(state: MfaUiState, viewModel: AddAccountViewModel) {
                     }
                 }
 
-                MfaStep.HIDDEN -> Unit
+                MfaStep.HIDDEN -> {
+                    Unit
+                }
             }
 
             state.actionError?.let { ErrorDetailsCard(it) }
@@ -399,9 +405,10 @@ private fun DropdownField(
             readOnly = true,
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier
-                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                .fillMaxWidth(),
+            modifier =
+                Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth(),
         )
         ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
             options.forEachIndexed { index, option ->

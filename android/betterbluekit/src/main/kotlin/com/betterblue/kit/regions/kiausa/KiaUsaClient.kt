@@ -39,11 +39,14 @@ import java.util.UUID
  * the padding, so use an explicit pattern.
  */
 private val RFC_1123_GMT: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US)
+    DateTimeFormatter
+        .ofPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'", Locale.US)
         .withZone(ZoneId.of("GMT"))
 
-class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
-
+class KiaUsaClient(
+    config: ApiClientConfig,
+) : ApiClientBase(config),
+    ApiClient {
     // Device ID is a simple uppercase UUID (matches Python: str(uuid.uuid4()).upper()).
     // Use the persisted device ID from configuration if available, so the server
     // recognizes the same device across re-authentications and the rmToken
@@ -62,7 +65,12 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     // Headers
 
     internal fun headers(): Map<String, String> {
-        val offset = ZoneId.systemDefault().rules.getOffset(Instant.now()).totalSeconds / 3600
+        val offset =
+            ZoneId
+                .systemDefault()
+                .rules
+                .getOffset(Instant.now())
+                .totalSeconds / 3600
         val hostName = baseUrl.removePrefix("https://")
 
         return mapOf(
@@ -108,30 +116,33 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     internal suspend fun loginWithMfa(sid: String?, rmToken: String?): AuthToken {
         BBLogger.info(BBLogCategory.AUTH, "KiaUSA: Attempting login for $username")
 
-        val loginHeaders = buildMap {
-            putAll(headers())
-            if (rmToken != null) put("rmtoken", rmToken)
-            if (sid != null) put("sid", sid)
-        }
+        val loginHeaders =
+            buildMap {
+                putAll(headers())
+                if (rmToken != null) put("rmtoken", rmToken)
+                if (sid != null) put("sid", sid)
+            }
 
-        val (_, result) = performJsonRequest(
-            url = "${apiUrl}prof/authUser",
-            method = HttpMethod.POST,
-            headers = loginHeaders,
-            body = buildJsonObject {
-                put("deviceKey", deviceId)
-                put("deviceType", 2)
-                put("tncFlag", 1)
-                put(
-                    "userCredential",
+        val (_, result) =
+            performJsonRequest(
+                url = "${apiUrl}prof/authUser",
+                method = HttpMethod.POST,
+                headers = loginHeaders,
+                body =
                     buildJsonObject {
-                        put("userId", username)
-                        put("password", password)
+                        put("deviceKey", deviceId)
+                        put("deviceType", 2)
+                        put("tncFlag", 1)
+                        put(
+                            "userCredential",
+                            buildJsonObject {
+                                put("userId", username)
+                                put("password", password)
+                            },
+                        )
                     },
-                )
-            },
-            requestType = HttpRequestType.LOGIN,
-        )
+                requestType = HttpRequestType.LOGIN,
+            )
 
         // The session tokens come back in the RESPONSE HEADERS, not the body.
         return parseLoginResponse(result.body, result.headers)
@@ -140,20 +151,22 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     override suspend fun sendMfaCode(xid: String, otpKey: String, method: MfaMethod) {
         BBLogger.info(BBLogCategory.MFA, "KiaUSA: Sending OTP via $method")
 
-        val otpHeaders = buildMap {
-            putAll(headers())
-            put("otpkey", otpKey)
-            put("notifytype", if (method == MfaMethod.EMAIL) "EMAIL" else "SMS")
-            put("xid", xid)
-        }
+        val otpHeaders =
+            buildMap {
+                putAll(headers())
+                put("otpkey", otpKey)
+                put("notifytype", if (method == MfaMethod.EMAIL) "EMAIL" else "SMS")
+                put("xid", xid)
+            }
 
-        val (_, result) = performJsonRequest(
-            url = "${apiUrl}cmm/sendOTP",
-            method = HttpMethod.POST,
-            headers = otpHeaders,
-            body = buildJsonObject {},
-            requestType = HttpRequestType.SEND_MFA,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "${apiUrl}cmm/sendOTP",
+                method = HttpMethod.POST,
+                headers = otpHeaders,
+                body = buildJsonObject {},
+                requestType = HttpRequestType.SEND_MFA,
+            )
 
         checkForKiaErrors(result.body)
         BBLogger.info(BBLogCategory.MFA, "KiaUSA: OTP sent successfully")
@@ -162,19 +175,21 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     override suspend fun verifyMfaCode(xid: String, otpKey: String, code: String): MfaVerification {
         BBLogger.info(BBLogCategory.MFA, "KiaUSA: Verifying OTP")
 
-        val verifyHeaders = buildMap {
-            putAll(headers())
-            put("otpkey", otpKey)
-            put("xid", xid)
-        }
+        val verifyHeaders =
+            buildMap {
+                putAll(headers())
+                put("otpkey", otpKey)
+                put("xid", xid)
+            }
 
-        val (_, result) = performJsonRequest(
-            url = "${apiUrl}cmm/verifyOTP",
-            method = HttpMethod.POST,
-            headers = verifyHeaders,
-            body = buildJsonObject { put("otp", code) },
-            requestType = HttpRequestType.VERIFY_MFA,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "${apiUrl}cmm/verifyOTP",
+                method = HttpMethod.POST,
+                headers = verifyHeaders,
+                body = buildJsonObject { put("otp", code) },
+                requestType = HttpRequestType.VERIFY_MFA,
+            )
 
         checkForKiaErrors(result.body)
 
@@ -197,12 +212,13 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     }
 
     override suspend fun fetchVehicles(authToken: AuthToken): List<Vehicle> {
-        val result = performRequest(
-            url = "${apiUrl}ownr/gvl",
-            method = HttpMethod.GET,
-            headers = authorizedHeaders(authToken),
-            requestType = HttpRequestType.FETCH_VEHICLES,
-        )
+        val result =
+            performRequest(
+                url = "${apiUrl}ownr/gvl",
+                method = HttpMethod.GET,
+                headers = authorizedHeaders(authToken),
+                requestType = HttpRequestType.FETCH_VEHICLES,
+            )
 
         return parseVehiclesResponse(result.body)
     }
@@ -229,19 +245,20 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
         // window is enough — within it, `cmm/gvi` already returns the
         // freshly-refreshed snapshot.
         if (!cached) {
-            val shouldPoll = refreshCooldownMutex.withLock {
-                val last = lastRealTimeRefresh
-                val elapsed = last?.let { Duration.between(it, Instant.now()).seconds }
-                if (elapsed != null && elapsed < REAL_TIME_REFRESH_COOLDOWN_SECONDS) {
-                    BBLogger.debug(
-                        BBLogCategory.API,
-                        "KiaUSA: skipping rems/rvs (last real-time refresh ${elapsed}s ago)",
-                    )
-                    false
-                } else {
-                    true
+            val shouldPoll =
+                refreshCooldownMutex.withLock {
+                    val last = lastRealTimeRefresh
+                    val elapsed = last?.let { Duration.between(it, Instant.now()).seconds }
+                    if (elapsed != null && elapsed < REAL_TIME_REFRESH_COOLDOWN_SECONDS) {
+                        BBLogger.debug(
+                            BBLogCategory.API,
+                            "KiaUSA: skipping rems/rvs (last real-time refresh ${elapsed}s ago)",
+                        )
+                        false
+                    } else {
+                        true
+                    }
                 }
-            }
             if (shouldPoll && triggerRealTimeStatusRefresh(vehicle, authToken)) {
                 // Stamp only successful modem polls — a failed/throttled one
                 // should be retried on the next poll, not cooled down.
@@ -251,40 +268,42 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
 
         // `cmm/gvi` only accepts `vehicleStatus: "1"`. Sending anything else
         // returns the server-side 9001 "Incorrect request payload format".
-        val body = buildJsonObject {
-            put(
-                "vehicleConfigReq",
-                buildJsonObject {
-                    put("airTempRange", "0")
-                    put("maintenance", "1")
-                    put("seatHeatCoolOption", "0")
-                    put("vehicle", "1")
-                    put("vehicleFeature", "0")
-                },
-            )
-            put(
-                "vehicleInfoReq",
-                buildJsonObject {
-                    put("drivingActivty", "0")
-                    put("dtc", "1")
-                    put("enrollment", "1")
-                    put("functionalCards", "0")
-                    put("location", "1")
-                    put("vehicleStatus", "1")
-                    put("weather", "0")
-                },
-            )
-            put("vinKey", buildJsonArray { add(vehicle.vehicleKey ?: "") })
-        }
+        val body =
+            buildJsonObject {
+                put(
+                    "vehicleConfigReq",
+                    buildJsonObject {
+                        put("airTempRange", "0")
+                        put("maintenance", "1")
+                        put("seatHeatCoolOption", "0")
+                        put("vehicle", "1")
+                        put("vehicleFeature", "0")
+                    },
+                )
+                put(
+                    "vehicleInfoReq",
+                    buildJsonObject {
+                        put("drivingActivty", "0")
+                        put("dtc", "1")
+                        put("enrollment", "1")
+                        put("functionalCards", "0")
+                        put("location", "1")
+                        put("vehicleStatus", "1")
+                        put("weather", "0")
+                    },
+                )
+                put("vinKey", buildJsonArray { add(vehicle.vehicleKey ?: "") })
+            }
 
-        val (_, result) = performJsonRequest(
-            url = "${apiUrl}cmm/gvi",
-            method = HttpMethod.POST,
-            headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
-            body = body,
-            requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-            vin = vehicle.vin,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = "${apiUrl}cmm/gvi",
+                method = HttpMethod.POST,
+                headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
+                body = body,
+                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                vin = vehicle.vin,
+            )
 
         return parseVehicleStatusResponse(result.body, vehicle)
     }
@@ -292,15 +311,16 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
     override suspend fun sendCommand(vehicle: Vehicle, command: VehicleCommand, authToken: AuthToken) {
         val method = commandMethod(command)
 
-        val (_, result) = performJsonRequest(
-            url = commandUrl(command),
-            method = method,
-            // The Kia stop commands (rems/stop, evc/cancel) are GETs with no body.
-            headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
-            body = if (method == HttpMethod.GET) null else commandBody(command),
-            requestType = HttpRequestType.SEND_COMMAND,
-            vin = vehicle.vin,
-        )
+        val (_, result) =
+            performJsonRequest(
+                url = commandUrl(command),
+                method = method,
+                // The Kia stop commands (rems/stop, evc/cancel) are GETs with no body.
+                headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
+                body = if (method == HttpMethod.GET) null else commandBody(command),
+                requestType = HttpRequestType.SEND_COMMAND,
+                vin = vehicle.vin,
+            )
 
         checkForKiaErrors(result.body)
     }
@@ -327,14 +347,15 @@ class KiaUsaClient(config: ApiClientConfig) : ApiClientBase(config), ApiClient {
         BBLogger.info(BBLogCategory.API, "KiaUSA: Requesting real-time status refresh for VIN ${vehicle.vin}")
 
         try {
-            val (_, result) = performJsonRequest(
-                url = "${apiUrl}rems/rvs",
-                method = HttpMethod.POST,
-                headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
-                body = buildJsonObject { put("requestType", 0) },
-                requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
-                vin = vehicle.vin,
-            )
+            val (_, result) =
+                performJsonRequest(
+                    url = "${apiUrl}rems/rvs",
+                    method = HttpMethod.POST,
+                    headers = authorizedHeaders(authToken, vehicleKey = vehicle.vehicleKey),
+                    body = buildJsonObject { put("requestType", 0) },
+                    requestType = HttpRequestType.FETCH_VEHICLE_STATUS,
+                    vin = vehicle.vin,
+                )
             checkForKiaErrors(result.body)
             return true
         } catch (e: CancellationException) {

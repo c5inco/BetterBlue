@@ -15,7 +15,6 @@ import org.junit.jupiter.api.Test
  * default rather than an error, so every reading is pinned here.
  */
 class CcspKeyPathsTest {
-
     private val ccs2 = CcspKeyPathMap(CcspApiProfile.CCS2)
     private val legacy = CcspKeyPathMap(CcspApiProfile.LEGACY)
 
@@ -50,13 +49,15 @@ class CcspKeyPathsTest {
         assertNotNull(path)
         assertTrue(path!!.contains(".0."), "expected an array index in $path")
 
-        val json = Json.parseToJsonElement(
-            """
-            {"vehicleStatus":{"evStatus":{"drvDistance":[
-              {"rangeByFuel":{"evModeRange":{"value":231,"unit":1}}}
-            ]}}}
-            """.trimIndent(),
-        ).jsonObject
+        val json =
+            Json
+                .parseToJsonElement(
+                    """
+                    {"vehicleStatus":{"evStatus":{"drvDistance":[
+                      {"rangeByFuel":{"evModeRange":{"value":231,"unit":1}}}
+                    ]}}}
+                    """.trimIndent(),
+                ).jsonObject
         assertEquals(231, ccspNumber(json, path))
         assertEquals(1, ccspNumber(json, legacy[CcspResponseKey.RANGE_UNIT]))
     }
@@ -65,9 +66,11 @@ class CcspKeyPathsTest {
     fun `ccs2 lock bits are inverted`() {
         // On CCS2, Lock == 0 means LOCKED — reading it uninverted flips the
         // padlock in the UI for every European car.
-        val json = Json.parseToJsonElement(
-            """{"Cabin":{"Door":{"Row1":{"Driver":{"Lock":0},"Passenger":{"Lock":1}}}}}""",
-        ).jsonObject
+        val json =
+            Json
+                .parseToJsonElement(
+                    """{"Cabin":{"Door":{"Row1":{"Driver":{"Lock":0},"Passenger":{"Lock":1}}}}}""",
+                ).jsonObject
 
         assertTrue(ccspBool(json, ccs2[CcspResponseKey.LOCK_1L], inverted = true))
         assertFalse(ccspBool(json, ccs2[CcspResponseKey.LOCK_1R], inverted = true))
@@ -77,9 +80,11 @@ class CcspKeyPathsTest {
 
     @Test
     fun `boolean readings accept bools numbers and strings`() {
-        val json = Json.parseToJsonElement(
-            """{"a":true,"b":1,"c":"true","d":"yes","e":0,"f":"false"}""",
-        ).jsonObject
+        val json =
+            Json
+                .parseToJsonElement(
+                    """{"a":true,"b":1,"c":"true","d":"yes","e":0,"f":"false"}""",
+                ).jsonObject
         assertTrue(ccspBool(json, "a"))
         assertTrue(ccspBool(json, "b"))
         assertTrue(ccspBool(json, "c"))
@@ -103,15 +108,19 @@ class CcspKeyPathsTest {
         // The legacy /location/park payload nests under gpsDetail; CCS2 puts
         // coord at the root. Both branches must resolve or the park fallback
         // silently produces (0, 0).
-        val legacyPark = Json.parseToJsonElement(
-            """{"gpsDetail":{"time":"20240315183045","coord":{"lat":52.37,"lon":4.89}}}""",
-        ).jsonObject
+        val legacyPark =
+            Json
+                .parseToJsonElement(
+                    """{"gpsDetail":{"time":"20240315183045","coord":{"lat":52.37,"lon":4.89}}}""",
+                ).jsonObject
         assertEquals(52.37, ccspDouble(legacyPark, legacy[CcspResponseKey.PARK_LAT]))
         assertEquals(4.89, ccspDouble(legacyPark, legacy[CcspResponseKey.PARK_LON]))
 
-        val ccs2Park = Json.parseToJsonElement(
-            """{"time":"20240315183045.000","coord":{"lat":48.85,"lon":2.35}}""",
-        ).jsonObject
+        val ccs2Park =
+            Json
+                .parseToJsonElement(
+                    """{"time":"20240315183045.000","coord":{"lat":48.85,"lon":2.35}}""",
+                ).jsonObject
         assertEquals(48.85, ccspDouble(ccs2Park, ccs2[CcspResponseKey.PARK_LAT]))
         assertEquals(2.35, ccspDouble(ccs2Park, ccs2[CcspResponseKey.PARK_LON]))
     }

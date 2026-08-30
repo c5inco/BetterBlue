@@ -43,11 +43,13 @@ abstract class ApiClientBase(
      * Per-instance HTTP client: shares the base client's pools but has its own
      * cookie jar, so account sessions never bleed into each other.
      */
-    val httpClient: OkHttpClient = baseHttpClient.newBuilder()
-        .cookieJar(cookieJar)
-        .followRedirects(true)
-        .followSslRedirects(true)
-        .build()
+    val httpClient: OkHttpClient =
+        baseHttpClient
+            .newBuilder()
+            .cookieJar(cookieJar)
+            .followRedirects(true)
+            .followSslRedirects(true)
+            .build()
 
     open val apiName: String get() = "ApiClient"
 
@@ -82,31 +84,41 @@ abstract class ApiClientBase(
         vin: String? = null,
         validateResponse: Boolean = true,
     ): HttpResult {
-        val contentType = headers.entries
-            .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }?.value
-            ?: "application/json"
+        val contentType =
+            headers.entries
+                .firstOrNull { it.key.equals("Content-Type", ignoreCase = true) }
+                ?.value
+                ?: "application/json"
 
-        val requestBody: RequestBody? = when {
-            body != null -> body.toRequestBody(contentType.toMediaType())
-            // OkHttp requires a body for POST/PUT; the APIs' bodiless POSTs
-            // (Kia stop commands are GETs, but e.g. Hyundai startCharge POSTs
-            // an empty body) send zero bytes.
-            method == HttpMethod.POST || method == HttpMethod.PUT ->
-                ByteArray(0).toRequestBody(contentType.toMediaType())
+        val requestBody: RequestBody? =
+            when {
+                body != null -> {
+                    body.toRequestBody(contentType.toMediaType())
+                }
 
-            else -> null
-        }
+                // OkHttp requires a body for POST/PUT; the APIs' bodiless POSTs
+                // (Kia stop commands are GETs, but e.g. Hyundai startCharge POSTs
+                // an empty body) send zero bytes.
+                method == HttpMethod.POST || method == HttpMethod.PUT -> {
+                    ByteArray(0).toRequestBody(contentType.toMediaType())
+                }
 
-        val request = Request.Builder()
-            .url(url)
-            .method(method.name, requestBody)
-            .apply {
-                for ((key, value) in headers) header(key, value)
-                if (headers.keys.none { it.equals("Content-Type", ignoreCase = true) } && requestBody != null) {
-                    header("Content-Type", "application/json")
+                else -> {
+                    null
                 }
             }
-            .build()
+
+        val request =
+            Request
+                .Builder()
+                .url(url)
+                .method(method.name, requestBody)
+                .apply {
+                    for ((key, value) in headers) header(key, value)
+                    if (headers.keys.none { it.equals("Content-Type", ignoreCase = true) } && requestBody != null) {
+                        header("Content-Type", "application/json")
+                    }
+                }.build()
 
         return performLoggedRequest(
             request = request,
@@ -127,15 +139,16 @@ abstract class ApiClientBase(
         vin: String? = null,
         validateResponse: Boolean = true,
     ): Pair<JsonObject, HttpResult> {
-        val result = performRequest(
-            url = url,
-            method = method,
-            headers = headers,
-            body = body?.toString()?.toByteArray(Charsets.UTF_8),
-            requestType = requestType,
-            vin = vin,
-            validateResponse = validateResponse,
-        )
+        val result =
+            performRequest(
+                url = url,
+                method = method,
+                headers = headers,
+                body = body?.toString()?.toByteArray(Charsets.UTF_8),
+                requestType = requestType,
+                vin = vin,
+                validateResponse = validateResponse,
+            )
         return parseJsonObject(result.body) to result
     }
 
@@ -154,34 +167,35 @@ abstract class ApiClientBase(
             "[$apiName] Sending ${requestType.displayName} request | URL: ${request.url} | Method: ${request.method}",
         )
 
-        val result = try {
-            httpClient.newCall(request).await().use { response ->
-                HttpResult(
-                    body = response.body.bytes(),
-                    code = response.code,
-                    headers = response.headers,
-                    finalUrl = response.request.url.toString(),
+        val result =
+            try {
+                httpClient.newCall(request).await().use { response ->
+                    HttpResult(
+                        body = response.body.bytes(),
+                        code = response.code,
+                        headers = response.headers,
+                        finalUrl = response.request.url.toString(),
+                    )
+                }
+            } catch (e: ApiException) {
+                throw e
+            } catch (e: Exception) {
+                logHttpRequest(
+                    requestType = requestType,
+                    method = request.method,
+                    url = request.url.toString(),
+                    requestHeaders = requestHeaders,
+                    requestBody = requestBodyText,
+                    responseStatus = null,
+                    responseHeaders = emptyMap(),
+                    responseBody = null,
+                    error = e.message ?: e.toString(),
+                    apiError = null,
+                    startTime = startTime,
+                    vin = vin,
                 )
+                throw ApiException("Network error: ${e.message ?: e}", apiName = apiName, cause = e)
             }
-        } catch (e: ApiException) {
-            throw e
-        } catch (e: Exception) {
-            logHttpRequest(
-                requestType = requestType,
-                method = request.method,
-                url = request.url.toString(),
-                requestHeaders = requestHeaders,
-                requestBody = requestBodyText,
-                responseStatus = null,
-                responseHeaders = emptyMap(),
-                responseBody = null,
-                error = e.message ?: e.toString(),
-                apiError = null,
-                startTime = startTime,
-                vin = vin,
-            )
-            throw ApiException("Network error: ${e.message ?: e}", apiName = apiName, cause = e)
-        }
 
         val responseBody = result.bodyString()
         val apiError = extractApiError(result.body)
@@ -251,11 +265,12 @@ abstract class ApiClientBase(
      * `hyundai_kia_connect_api` `_check_response_for_errors`.
      */
     fun checkCcspResponseForErrors(data: ByteArray) {
-        val json = try {
-            parseJsonObject(data)
-        } catch (_: Exception) {
-            return
-        }
+        val json =
+            try {
+                parseJsonObject(data)
+            } catch (_: Exception) {
+                return
+            }
         if (json["retCode"].asStringOrNull() != "F") return
         val resCode = json["resCode"].asStringOrNull() ?: return
         val resMsg = json["resMsg"].asStringOrNull() ?: "Unknown error"
@@ -265,35 +280,42 @@ abstract class ApiClientBase(
             "7501" -> throw ApiException.invalidCredentials(
                 "Authentication expired — please sign in again.", apiName = apiName,
             )
+
             // Invalid deviceId — re-registering the device fixes it
             "4002" -> throw ApiException.invalidVehicleSession(
                 "Invalid device ID — please sign out and back in.", apiName = apiName,
             )
+
             // A previous command is still queued server-side
             "4004" -> throw ApiException.concurrentRequest(
                 "A previous command is still being processed. Please wait a moment and try again.",
                 apiName = apiName,
             )
+
             // Control action not supported for this vehicle
             "4005" -> throw ApiException(
                 message = "This action isn't supported for this vehicle.",
                 code = 400,
                 apiName = apiName,
             )
+
             // Request/response timeout
             "4081", "9999" -> throw ApiException.serverError(
                 "The request timed out. Please try again.", apiName = apiName,
             )
+
             // Remote control temporarily unavailable
             "5031" -> throw ApiException.serverError(
                 "Remote control is temporarily unavailable. Please try again later.",
                 apiName = apiName,
             )
+
             // Exceeds number of requests
             "5091" -> throw ApiException.serverError(
                 "Too many requests — please wait a while before trying again.",
                 apiName = apiName,
             )
+
             // No data found yet
             "5921" -> throw ApiException(
                 message = "No data available from the vehicle yet. Try refreshing in a moment.",
@@ -311,11 +333,12 @@ abstract class ApiClientBase(
 
     fun extractApiError(data: ByteArray?): String? {
         if (data == null) return null
-        val json = try {
-            parseJsonObject(data)
-        } catch (_: Exception) {
-            return null
-        }
+        val json =
+            try {
+                parseJsonObject(data)
+            } catch (_: Exception) {
+                return null
+            }
 
         val status = json["status"] as? JsonObject
         if (status != null) {
@@ -402,7 +425,12 @@ abstract class ApiClientBase(
     }
 
     private fun captureStackTrace(): String =
-        Thread.currentThread().stackTrace.drop(2).take(10).joinToString("\n") { it.toString() }
+        Thread
+            .currentThread()
+            .stackTrace
+            .drop(2)
+            .take(10)
+            .joinToString("\n") { it.toString() }
 
     companion object {
         val json: Json = Json { ignoreUnknownKeys = true }
@@ -412,7 +440,8 @@ abstract class ApiClientBase(
          * real-time vehicle polls legitimately take a minute or more.
          */
         val defaultHttpClient: OkHttpClient by lazy {
-            OkHttpClient.Builder()
+            OkHttpClient
+                .Builder()
                 .connectTimeout(Duration.ofSeconds(30))
                 .readTimeout(Duration.ofSeconds(120))
                 .writeTimeout(Duration.ofSeconds(30))
@@ -429,21 +458,22 @@ abstract class ApiClientBase(
             }
         }
 
-        private fun httpStatusText(code: Int): String = when (code) {
-            400 -> "bad request"
-            401 -> "unauthorized"
-            403 -> "forbidden"
-            404 -> "not found"
-            405 -> "method not allowed"
-            408 -> "request timeout"
-            409 -> "conflict"
-            429 -> "too many requests"
-            500 -> "internal server error"
-            502 -> "bad gateway"
-            503 -> "service unavailable"
-            504 -> "gateway timeout"
-            else -> "server error"
-        }
+        private fun httpStatusText(code: Int): String =
+            when (code) {
+                400 -> "bad request"
+                401 -> "unauthorized"
+                403 -> "forbidden"
+                404 -> "not found"
+                405 -> "method not allowed"
+                408 -> "request timeout"
+                409 -> "conflict"
+                429 -> "too many requests"
+                500 -> "internal server error"
+                502 -> "bad gateway"
+                503 -> "service unavailable"
+                504 -> "gateway timeout"
+                else -> "server error"
+            }
     }
 }
 

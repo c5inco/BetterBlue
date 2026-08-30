@@ -50,19 +50,20 @@ enum class ApiErrorType {
 
     /** Human-readable label for UI. */
     val displayLabel: String
-        get() = when (this) {
-            GENERAL -> "Error"
-            INVALID_VEHICLE_SESSION -> "Session Expired"
-            INVALID_CREDENTIALS -> "Invalid Credentials"
-            SERVER_ERROR -> "Server Error"
-            INVALID_PIN -> "Invalid PIN"
-            CONCURRENT_REQUEST -> "Request In Progress"
-            FAILED_RETRY_LOGIN -> "Reauthentication Failed"
-            REQUIRES_MFA -> "Verification Required"
-            KIA_INVALID_REQUEST -> "Request Rejected"
-            REGION_NOT_SUPPORTED -> "Region Not Supported"
-            STATUS_VERIFICATION_TIMEOUT -> "Awaiting Confirmation"
-        }
+        get() =
+            when (this) {
+                GENERAL -> "Error"
+                INVALID_VEHICLE_SESSION -> "Session Expired"
+                INVALID_CREDENTIALS -> "Invalid Credentials"
+                SERVER_ERROR -> "Server Error"
+                INVALID_PIN -> "Invalid PIN"
+                CONCURRENT_REQUEST -> "Request In Progress"
+                FAILED_RETRY_LOGIN -> "Reauthentication Failed"
+                REQUIRES_MFA -> "Verification Required"
+                KIA_INVALID_REQUEST -> "Request Rejected"
+                REGION_NOT_SUPPORTED -> "Region Not Supported"
+                STATUS_VERIFICATION_TIMEOUT -> "Awaiting Confirmation"
+            }
 }
 
 class ApiException(
@@ -73,7 +74,6 @@ class ApiException(
     val userInfo: Map<String, String>? = null,
     cause: Throwable? = null,
 ) : Exception(message, cause) {
-
     companion object {
         fun logError(
             message: String,
@@ -102,20 +102,22 @@ class ApiException(
             rmTokenExpired: Boolean = false,
             apiName: String? = null,
         ): ApiException {
-            val info = buildMap {
-                put("xid", xid)
-                if (otpKey != null) put("otpKey", otpKey)
-                put("hasEmail", if (hasEmail) "true" else "false")
-                put("hasPhone", if (hasPhone) "true" else "false")
-                if (email != null) put("email", email)
-                if (phone != null) put("phone", phone)
-                if (rmTokenExpired) put("rmTokenExpired", "true")
-            }
-            val message = if (rmTokenExpired) {
-                "Session expired - verification required"
-            } else {
-                "Multi-Factor Authentication Required"
-            }
+            val info =
+                buildMap {
+                    put("xid", xid)
+                    if (otpKey != null) put("otpKey", otpKey)
+                    put("hasEmail", if (hasEmail) "true" else "false")
+                    put("hasPhone", if (hasPhone) "true" else "false")
+                    if (email != null) put("email", email)
+                    if (phone != null) put("phone", phone)
+                    if (rmTokenExpired) put("rmTokenExpired", "true")
+                }
+            val message =
+                if (rmTokenExpired) {
+                    "Session expired - verification required"
+                } else {
+                    "Multi-Factor Authentication Required"
+                }
             return logError(message, apiName = apiName, errorType = ApiErrorType.REQUIRES_MFA, userInfo = info)
         }
 

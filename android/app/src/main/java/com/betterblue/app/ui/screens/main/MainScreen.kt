@@ -32,6 +32,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import com.betterblue.app.ui.navigation.DeepLinkAction
+import com.betterblue.app.ui.sheets.AppSheetHost
 
 @Composable
 fun MainScreen(
@@ -90,9 +91,10 @@ fun MainScreen(
         }
 
         PersistentSheet(
-            detent = SheetDetent.fromStorageKey(
-                state.detents[vehicles.getOrNull(pagerState.currentPage)?.vin],
-            ),
+            detent =
+                SheetDetent.fromStorageKey(
+                    state.detents[vehicles.getOrNull(pagerState.currentPage)?.vin],
+                ),
             onDetentChanged = { detent ->
                 vehicles.getOrNull(pagerState.currentPage)?.let {
                     viewModel.setDetent(it.vin, detent.storageKey)
@@ -113,19 +115,28 @@ fun MainScreen(
                     onToggleClimate = { viewModel.toggleClimate(vehicle) },
                     onToggleCharge = { viewModel.toggleCharge(vehicle) },
                     onOpenSettings = onOpenSettings,
+                    onOpenSheet = viewModel::showSheet,
                     onDismissError = { viewModel.dismissActionState(vehicle.vin) },
                 )
             }
         }
+
+        AppSheetHost(
+            route = state.sheet,
+            distanceUnit = distanceUnit,
+            temperatureUnit = temperatureUnit,
+            onDismiss = viewModel::dismissSheet,
+        )
     }
 }
 
 @Composable
 private fun EmptyState(onAddAccount: () -> Unit, onOpenSettings: () -> Unit) {
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface),
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surface),
         contentAlignment = Alignment.Center,
     ) {
         Column(

@@ -29,9 +29,13 @@ import androidx.compose.ui.unit.dp
 fun TroubleshootingScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val text by produceState(initialValue = "") {
-        value = runCatching {
-            context.assets.open("Troubleshooting.md").bufferedReader().use { it.readText() }
-        }.getOrElse { "Troubleshooting guide unavailable." }
+        value =
+            runCatching {
+                context.assets
+                    .open("Troubleshooting.md")
+                    .bufferedReader()
+                    .use { it.readText() }
+            }.getOrElse { "Troubleshooting guide unavailable." }
     }
 
     Scaffold(
@@ -49,11 +53,12 @@ fun TroubleshootingScreen(onBack: () -> Unit) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
         )
     }
 }

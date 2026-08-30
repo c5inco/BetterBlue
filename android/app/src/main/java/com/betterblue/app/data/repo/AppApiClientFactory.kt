@@ -27,47 +27,52 @@ import javax.inject.Singleton
  * MFA-gated backends treat each initialization as a brand-new device.
  */
 @Singleton
-class AppApiClientFactory @Inject constructor(
-    private val fakeVehicleProvider: RoomFakeVehicleProvider,
-    private val logSinkManager: HttpLogSinkManager,
-    @AppScope private val appScope: CoroutineScope,
-) {
-    fun create(
-        credentials: AccountCredentials,
-        onRememberMeTokenRotated: ((String) -> Unit)? = null,
-    ): CachedApiClient {
-        val effectiveBrand = if (isTestAccount(credentials.username, credentials.password)) {
-            Brand.FAKE
-        } else {
-            credentials.brand
+class AppApiClientFactory
+    @Inject
+    constructor(
+        private val fakeVehicleProvider: RoomFakeVehicleProvider,
+        private val logSinkManager: HttpLogSinkManager,
+        @AppScope private val appScope: CoroutineScope,
+    ) {
+        fun create(
+            credentials: AccountCredentials,
+            onRememberMeTokenRotated: ((String) -> Unit)? = null,
+        ): CachedApiClient {
+            val effectiveBrand =
+                if (isTestAccount(credentials.username, credentials.password)) {
+                    Brand.FAKE
+                } else {
+                    credentials.brand
+                }
+
+            val config =
+                ApiClientConfig(
+                    region = credentials.region,
+                    brand = effectiveBrand,
+                    username = credentials.username,
+                    password = credentials.password,
+                    refreshToken = credentials.refreshToken,
+                    pin = credentials.pin,
+                    accountId = credentials.id,
+                    logSink = logSinkManager.createLogSink(),
+                    rememberMeToken = credentials.rememberMeToken,
+                    deviceId = credentials.deviceId,
+                    hyundaiCanadaVariant = credentials.hyundaiCanadaVariant,
+                    onRememberMeTokenRotated = onRememberMeTokenRotated,
+                )
+
+            val underlying: ApiClient =
+                if (effectiveBrand == Brand.FAKE) {
+                    BBLogger.info(BBLogCategory.API, "AppApiClientFactory: creating Room-backed fake API client")
+                    FakeApiClient(config, fakeVehicleProvider)
+                } else {
+                    BBLogger.info(
+                        BBLogCategory.API,
+                        "AppApiClientFactory: creating ${effectiveBrand.displayName} client for ${credentials.region}",
+                    )
+                    createBetterBlueKitApiClient(config)
+                }
+
+            return CachedApiClient(underlying, appScope)
         }
-
-        val config = ApiClientConfig(
-            region = credentials.region,
-            brand = effectiveBrand,
-            username = credentials.username,
-            password = credentials.password,
-            refreshToken = credentials.refreshToken,
-            pin = credentials.pin,
-            accountId = credentials.id,
-            logSink = logSinkManager.createLogSink(),
-            rememberMeToken = credentials.rememberMeToken,
-            deviceId = credentials.deviceId,
-            hyundaiCanadaVariant = credentials.hyundaiCanadaVariant,
-            onRememberMeTokenRotated = onRememberMeTokenRotated,
-        )
-
-        val underlying: ApiClient = if (effectiveBrand == Brand.FAKE) {
-            BBLogger.info(BBLogCategory.API, "AppApiClientFactory: creating Room-backed fake API client")
-            FakeApiClient(config, fakeVehicleProvider)
-        } else {
-            BBLogger.info(
-                BBLogCategory.API,
-                "AppApiClientFactory: creating ${effectiveBrand.displayName} client for ${credentials.region}",
-            )
-            createBetterBlueKitApiClient(config)
-        }
-
-        return CachedApiClient(underlying, appScope)
     }
-}
