@@ -7,7 +7,6 @@ import com.betterblue.app.data.db.entity.VehicleEntity
 import com.betterblue.app.data.security.CredentialCipher
 import com.betterblue.app.di.AppScope
 import com.betterblue.kit.cache.CachedApiClient
-import com.betterblue.kit.ApiErrorType
 import com.betterblue.kit.ApiException
 import com.betterblue.kit.HyundaiCanadaVariant
 import com.betterblue.kit.MfaMethod
@@ -17,6 +16,8 @@ import com.betterblue.kit.model.Region
 import com.betterblue.kit.model.Vehicle
 import com.betterblue.kit.log.BBLogCategory
 import com.betterblue.kit.log.BBLogger
+import com.betterblue.kit.policy.shouldReauthenticate
+import com.betterblue.kit.policy.shouldRetryCommand
 import com.betterblue.kit.supportsMfa
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -282,45 +283,11 @@ class AccountRepository @Inject constructor(
         BBLogger.info(BBLogCategory.MFA, "AccountRepository: MFA complete")
     }
 
-    /**
-     * Only errors that genuinely indicate the session is no longer valid
-     * clear the auth token and trigger a fresh login — each Kia `authUser`
-     * call risks tripping anti-fraud and forcing MFA again. Transient
-     * failures are surfaced without touching the session.
-     */
-    fun shouldReauthenticate(error: ApiException): Boolean = when (error.errorType) {
-        ApiErrorType.INVALID_CREDENTIALS,
-        ApiErrorType.INVALID_VEHICLE_SESSION,
-        ApiErrorType.FAILED_RETRY_LOGIN,
-        ApiErrorType.KIA_INVALID_REQUEST,
-        -> true
+    /** See [com.betterblue.kit.policy.shouldReauthenticate] — tested in the kit. */
+    fun shouldReauthenticate(error: ApiException): Boolean = shouldReauthenticate(error.errorType)
 
-        ApiErrorType.REQUIRES_MFA,
-        ApiErrorType.INVALID_PIN,
-        ApiErrorType.SERVER_ERROR,
-        ApiErrorType.CONCURRENT_REQUEST,
-        ApiErrorType.REGION_NOT_SUPPORTED,
-        ApiErrorType.STATUS_VERIFICATION_TIMEOUT,
-        ApiErrorType.GENERAL,
-        -> false
-    }
-
-    /**
-     * Whether a failed COMMAND may be re-sent after re-authenticating.
-     * Deliberately narrower than [shouldReauthenticate]: commands change
-     * vehicle state, so a blind retry can act on the car twice. Only retry
-     * when the error proves the backend rejected the request before it
-     * reached the vehicle. KIA_INVALID_REQUEST is excluded — Kia's
-     * anti-fraud layer can return it AFTER accepting a command.
-     */
-    fun shouldRetryCommand(error: ApiException): Boolean = when (error.errorType) {
-        ApiErrorType.INVALID_CREDENTIALS,
-        ApiErrorType.INVALID_VEHICLE_SESSION,
-        ApiErrorType.FAILED_RETRY_LOGIN,
-        -> true
-
-        else -> false
-    }
+    /** See [com.betterblue.kit.policy.shouldRetryCommand] — tested in the kit. */
+    fun shouldRetryCommand(error: ApiException): Boolean = shouldRetryCommand(error.errorType)
 
     /**
      * Full re-initialization after a session-invalidating error.

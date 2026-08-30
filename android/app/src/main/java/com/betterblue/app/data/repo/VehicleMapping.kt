@@ -4,6 +4,8 @@ import com.betterblue.app.data.db.entity.VehicleEntity
 import com.betterblue.kit.log.BBLogCategory
 import com.betterblue.kit.log.BBLogger
 import com.betterblue.kit.model.FuelType
+import com.betterblue.kit.policy.inferFuelType
+import com.betterblue.kit.policy.isFuelTypeUpgrade
 import com.betterblue.kit.model.Vehicle
 import com.betterblue.kit.model.VehicleMarketOptions
 import com.betterblue.kit.model.VehicleStatus
@@ -58,22 +60,6 @@ val VehicleEntity.lockStatusEnum: VehicleStatus.LockStatus?
     }
 
 /**
- * Returns true when [to] is more specific than [from] along the
- * gas → electric → phev axis. Used to one-way upgrade a misclassified
- * fuelType once a status payload reveals the real powertrain — without ever
- * demoting (a PHEV momentarily returning evStatus only must not flip back to
- * electric).
- */
-internal fun isFuelTypeUpgrade(from: FuelType, to: FuelType): Boolean = when (from to to) {
-    FuelType.GAS to FuelType.ELECTRIC,
-    FuelType.GAS to FuelType.PHEV,
-    FuelType.ELECTRIC to FuelType.PHEV,
-    -> true
-
-    else -> false
-}
-
-/**
  * Merges a fetched [VehicleStatus] into the stored row, preserving UI state.
  * Port of iOS `BBVehicle.updateStatus(with:)` including the fuel-type
  * self-heal:
@@ -86,12 +72,7 @@ internal fun isFuelTypeUpgrade(from: FuelType, to: FuelType): Boolean = when (fr
  * vehicle we already know is a PHEV.
  */
 fun VehicleEntity.updatedWithStatus(status: VehicleStatus): VehicleEntity {
-    val inferred: FuelType? = when {
-        status.evStatus != null && status.gasRange != null -> FuelType.PHEV
-        status.evStatus != null -> FuelType.ELECTRIC
-        status.gasRange != null -> FuelType.GAS
-        else -> null
-    }
+    val inferred: FuelType? = inferFuelType(status)
 
     var newFuelTypeRaw = fuelTypeRaw
     if (inferred != null && isFuelTypeUpgrade(inferredFuelType, inferred)) {

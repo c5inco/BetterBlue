@@ -61,6 +61,24 @@ secrets {
     propertiesFileName = "local.properties"
 }
 
+// The map composable reads the key at runtime to decide between the real map
+// and the keyless placeholder, so it needs it in BuildConfig too (the secrets
+// plugin only injects the manifest placeholder).
+androidComponents {
+    onVariants { variant ->
+        val key = providers.provider {
+            val local = rootProject.file("local.properties")
+            val props = java.util.Properties()
+            if (local.exists()) local.inputStream().use(props::load)
+            props.getProperty("MAPS_API_KEY", "")
+        }
+        variant.buildConfigFields.put(
+            "MAPS_API_KEY",
+            key.map { com.android.build.api.variant.BuildConfigField("String", "\"$it\"", "Maps API key") },
+        )
+    }
+}
+
 dependencies {
     implementation(project(":betterbluekit"))
 
