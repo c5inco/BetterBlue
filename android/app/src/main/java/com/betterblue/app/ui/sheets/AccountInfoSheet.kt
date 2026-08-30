@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.betterblue.app.data.db.entity.AccountEntity
+import com.betterblue.app.data.repo.AccountRepository
 import com.betterblue.app.ui.common.ErrorDetailsCard
 import com.betterblue.kit.HyundaiCanadaVariant
 import com.betterblue.kit.model.Brand
@@ -35,13 +36,8 @@ fun AccountInfoSheet(account: AccountEntity, state: SheetUiState, viewModel: She
     var refreshToken by remember(account.id) { mutableStateOf("") }
     var confirmDelete by remember { mutableStateOf(false) }
 
-    val brand =
-        when (account.brand) {
-            "kia" -> Brand.KIA
-            "fake" -> Brand.FAKE
-            else -> Brand.HYUNDAI
-        }
-    val region = Region.entries.firstOrNull { it.name == account.region } ?: Region.USA
+    val brand = AccountRepository.brandFromRaw(account.brand)
+    val region = AccountRepository.regionFromRaw(account.region)
 
     SheetScaffold(title = "Account") {
         SheetSection("Identity") {

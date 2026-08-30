@@ -33,6 +33,7 @@ import com.betterblue.app.data.repo.effectiveFuelType
 import com.betterblue.kit.model.ClimateOptions
 import com.betterblue.kit.model.HvacTemperatureTable
 import com.betterblue.kit.model.Temperature
+import com.betterblue.kit.model.VehicleMarketOptions
 import kotlin.math.roundToInt
 
 /**
@@ -79,6 +80,7 @@ fun ClimateSettingsSheet(
                     preset = preset,
                     vehicle = vehicle,
                     temperatureUnit = temperatureUnit,
+                    hvacTable = vehicle.hvacTable(),
                     onChange = viewModel::updatePreset,
                     onSelect = { viewModel.selectPreset(preset) },
                     onDelete = { viewModel.deletePreset(preset) },
@@ -98,6 +100,7 @@ private fun PresetEditor(
     preset: ClimatePresetEntity,
     vehicle: VehicleEntity,
     temperatureUnit: Temperature.Units,
+    hvacTable: HvacTemperatureTable,
     onChange: (ClimatePresetEntity) -> Unit,
     onSelect: () -> Unit,
     onDelete: () -> Unit,
@@ -119,7 +122,7 @@ private fun PresetEditor(
     }
 
     SheetSection("Temperature") {
-        TemperatureControl(options.temperature, temperatureUnit) { newTemp ->
+        TemperatureControl(options.temperature, temperatureUnit, hvacTable) { newTemp ->
             update { it.copy(temperature = newTemp) }
         }
     }
@@ -186,6 +189,7 @@ private fun PresetEditor(
 private fun TemperatureControl(
     temperature: Temperature,
     displayUnit: Temperature.Units,
+    hvacTable: HvacTemperatureTable,
     onChange: (Temperature) -> Unit,
 ) {
     val shown =
@@ -193,7 +197,7 @@ private fun TemperatureControl(
             temperature.value,
             temperature.units,
             displayUnit,
-            HvacTemperatureTable.STANDARD,
+            hvacTable,
         )
     val range = displayUnit.hvacRange
     val step = if (displayUnit == Temperature.Units.CELSIUS) 0.5f else 1f
@@ -231,3 +235,19 @@ private fun LevelRow(label: String, level: Int, onChange: (Int) -> Unit) {
         }
     }
 }
+
+/**
+ * Which lookup table this vehicle's HVAC controller uses. CCS2 European
+ * vehicles reject anything off the EU grid, so the picker has to walk the
+ * same table the command will be built from.
+ */
+private fun VehicleEntity.hvacTable(): HvacTemperatureTable =
+    when (marketOptions) {
+        is VehicleMarketOptions.HyundaiEurope, is VehicleMarketOptions.KiaEurope -> {
+            HvacTemperatureTable.EUROPEAN
+        }
+
+        else -> {
+            HvacTemperatureTable.STANDARD
+        }
+    }

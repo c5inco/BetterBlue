@@ -30,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.betterblue.app.data.db.entity.VehicleEntity
 import com.betterblue.app.data.repo.effectiveFuelType
+import com.betterblue.app.data.repo.toRaw
 import com.betterblue.app.ui.theme.CustomColors
 import com.betterblue.kit.model.FuelType
 
@@ -105,7 +106,7 @@ fun VehicleInfoSheet(vehicle: VehicleEntity, viewModel: SheetsViewModel) {
             SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
                 options.forEachIndexed { index, (label, type) ->
                     SegmentedButton(
-                        selected = vehicle.fuelTypeOverrideRaw == type?.name?.lowercase(),
+                        selected = vehicle.fuelTypeOverrideRaw == type?.toRaw(),
                         onClick = { viewModel.setFuelTypeOverride(type) },
                         shape = SegmentedButtonDefaults.itemShape(index, options.size),
                     ) { Text(label) }

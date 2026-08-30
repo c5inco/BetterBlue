@@ -94,13 +94,39 @@ These carry real consequences and are unit-tested in the kit
 - **Cloudflare-sensitive constants.** Kia EU's `_CCS_APP_AOS` user-agent suffix
   and Hyundai Canada's `__cf_bm` handshake are load-bearing, not cosmetic.
 
+## Screens
+
+The main screen is a full-bleed map with a two-detent draggable sheet over it,
+one paged card per vehicle. Everything else is a modal sheet, routed through a
+single sealed `SheetRoute` host so the set stays exhaustive at compile time:
+vehicle settings, account, climate presets, charge limits, trips, surround
+view, HTTP logs, and the fake-vehicle debug configuration. They open from the
+overflow menu on the card, gated the same way iOS gates its context menu.
+
 ## Test coverage
 
-`./gradlew :betterbluekit:test` runs 200+ tests covering the measurement and
-HVAC tables, date parsing, PII redaction, the surround-view JPEG splitter,
-UUIDv5 derivation, the CCSP key-path table and stamp, per-region response
-parsing, the caching/dedup layer, and the retry and fuel-type policies. Region
-payloads are ported from the Swift suite's captured responses.
+`./gradlew :betterbluekit:test` runs 214 tests covering the measurement and
+HVAC tables, date parsing, PII redaction, the surround-view JPEG splitter and
+capture polling, UUIDv5 derivation, the CCSP key-path table and stamp,
+per-region response parsing, the caching/dedup layer, and the retry and
+fuel-type policies. Region payloads are ported from the Swift suite's captured
+responses.
+
+Logic worth testing is deliberately pushed down into `:betterbluekit` rather
+than left in `:app`: the retry policies, fuel-type self-heal, and the
+surround-view capture poller (a 6-minute deadline exercised with virtual time)
+all live there, so they run on every build instead of relying on a device.
+
+## Linting
+
+`.editorconfig` configures ktlint for both modules; the tree is clean. In an
+environment without the Android SDK this is the strongest available check on
+`:app`, since ktlint parses with the real Kotlin frontend — it catches
+malformed code even where the androidx dependencies can't resolve.
+
+```bash
+ktlint --format "app/src/main/java/**/*.kt" "betterbluekit/src/**/*.kt"
+```
 
 ## Not ported
 

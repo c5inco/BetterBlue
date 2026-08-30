@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.betterblue.app.BuildConfig
+import com.betterblue.app.data.repo.AccountRepository
 import com.betterblue.app.data.repo.displayName
 import com.betterblue.kit.model.Distance
 import com.betterblue.kit.model.Temperature
@@ -89,7 +90,12 @@ fun SettingsScreen(
             items(accounts, key = { it.id }) { account ->
                 ListItem(
                     headlineContent = { Text(account.username) },
-                    supportingContent = { Text("${account.brand} · ${account.region}") },
+                    supportingContent = {
+                        Text(
+                            "${AccountRepository.brandFromRaw(account.brand).displayName} · " +
+                                AccountRepository.regionFromRaw(account.region).displayName,
+                        )
+                    },
                     leadingContent = { Icon(Icons.Filled.Person, contentDescription = null) },
                     modifier = Modifier.clickable { onOpenAccount(account.id) },
                 )
