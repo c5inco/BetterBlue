@@ -1767,7 +1767,13 @@ struct VehicleSheetPager: View {
                     // gesture settled). Keyed on the dictionary so any
                     // per-VIN change re-runs the animation.
                     .animation(.spring(response: 0.35, dampingFraction: 0.85), value: detents)
-                    .animation(.spring(response: 0.4, dampingFraction: 0.85), value: maxNaturalHeight)
+                    // Content-height preferences arrive during the first
+                    // layout pass. Animating those measurements makes the
+                    // bottom-anchored sheet appear to grow diagonally from
+                    // the window's top-leading corner on cold launch. Apply
+                    // measured geometry immediately; user-driven detent
+                    // changes still use the spring above.
+                    .animation(nil, value: maxNaturalHeight)
                     // No animation when `selectedVehicleIndex`
                     // changes — when the user swipes to a card with
                     // a different fuel type, the card height should

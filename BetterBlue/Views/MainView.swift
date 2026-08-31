@@ -48,6 +48,9 @@ struct MainView: View {
     /// rendered by a single `.sheet(item:)` on `mainContent`.
     @State private var sheetPresentation = VehicleSheetPresentation()
     @State private var mapCameraPosition: MapCameraPosition?
+    /// Prevent the initial map-region transaction from animating the
+    /// surrounding map-and-sheet layout while launch geometry settles.
+    @State private var hasCompletedInitialMapCentering = false
     @State private var markerMenuPosition = CGPoint.zero
     @State private var isLoading = false
     @State var lastError: APIError?
@@ -155,7 +158,11 @@ struct MainView: View {
                     // back to the locale-region view when the vehicle
                     // has no usable coordinate.
                     if currentVehicle != nil {
-                        updateMapRegion(reason: "initial view appearance")
+                        updateMapRegion(
+                            reason: "initial view appearance",
+                            animated: false
+                        )
+                        hasCompletedInitialMapCentering = true
                     }
                     Task {
                         await loadVehiclesForAllAccounts()
@@ -178,7 +185,11 @@ struct MainView: View {
                     // locations too: updateMapRegion then applies the
                     // missing-location fallback region instead.
                     if currentVehicle != nil {
-                        updateMapRegion(reason: "vehicle location updated")
+                        updateMapRegion(
+                            reason: "vehicle location updated",
+                            animated: hasCompletedInitialMapCentering
+                        )
+                        hasCompletedInitialMapCentering = true
                     }
                 }
                 .onChange(of: displayedVehicles.count) { oldCount, newCount in
@@ -478,6 +489,7 @@ extension MainView {
     /// Centralized method to update map region with proper centering
     private func updateMapRegion(
         reason: String = "unknown",
+        animated: Bool = true,
     ) {
         BBLogger.debug(.app, "MapCentering: updateMapRegion called - \(reason)")
 
@@ -506,10 +518,18 @@ extension MainView {
 
         BBLogger.debug(.app, "MapCentering: Updating map region for \(vehicle.displayName)")
 
-        withAnimation(
-            .easeInOut(duration: MapCenteringConfig.animationDuration),
-        ) {
-            mapRegion = newRegion
+        if animated {
+            withAnimation(
+                .easeInOut(duration: MapCenteringConfig.animationDuration),
+            ) {
+                mapRegion = newRegion
+            }
+        } else {
+            var transaction = Transaction()
+            transaction.disablesAnimations = true
+            withTransaction(transaction) {
+                mapRegion = newRegion
+            }
         }
     }
 
