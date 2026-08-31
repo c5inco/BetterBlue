@@ -1,0 +1,9 @@
+// Copy this file to Signing.local.xcconfig and fill in values registered
+// to your Apple Developer account. The local file is gitignored.
+BETTERBLUE_DEVELOPMENT_TEAM = YOUR_TEAM_ID
+BETTERBLUE_APP_BUNDLE_IDENTIFIER = com.example.BetterBlue
+BETTERBLUE_WIDGET_BUNDLE_IDENTIFIER = com.example.BetterBlue.Widget
+BETTERBLUE_WATCH_APP_BUNDLE_IDENTIFIER = com.example.BetterBlue.watchkitapp
+BETTERBLUE_WATCH_WIDGET_BUNDLE_IDENTIFIER = com.example.BetterBlue.watchkitapp.WatchWidget
+BETTERBLUE_APP_GROUP_IDENTIFIER = group.com.example.BetterBlue.shared
+BETTERBLUE_ICLOUD_CONTAINER_IDENTIFIER = iCloud.com.example.BetterBlue

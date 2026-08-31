@@ -9,6 +9,10 @@ import BetterBlueKit
 import Foundation
 import SwiftData
 
+private func configuredIdentifier(_ key: String, fallback: String) -> String {
+    Bundle.main.object(forInfoDictionaryKey: key) as? String ?? fallback
+}
+
 func getSimulatorStoreURL() -> URL {
     // In simulator, use a fixed shared location to work around App Group container isolation
     let sharedSimulatorPath = "/tmp/BetterBlue_Shared"
@@ -21,7 +25,10 @@ func getSimulatorStoreURL() -> URL {
 }
 
 func getAppGroupStoreURL() throws -> URL {
-    let appGroupID = "group.com.betterblue.shared"
+    let appGroupID = configuredIdentifier(
+        "BetterBlueAppGroupIdentifier",
+        fallback: "group.com.betterblue.shared"
+    )
     if let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
         return appGroupURL.appendingPathComponent("BetterBlue.sqlite")
     } else {
@@ -132,7 +139,10 @@ func createSharedModelContainer(enableCloudKit: Bool = true) throws -> ModelCont
         return try createContainer(storeURL: storeURL, schema: schema, cloudKitDatabase: cloudKitDatabase)
     #else
         let cloudConfig = ModelConfiguration(
-            "iCloud.com.markschmidt.BetterBlue",
+            configuredIdentifier(
+                "BetterBlueICloudContainerIdentifier",
+                fallback: "iCloud.com.markschmidt.BetterBlue"
+            ),
             cloudKitDatabase: cloudKitDatabase
         )
 

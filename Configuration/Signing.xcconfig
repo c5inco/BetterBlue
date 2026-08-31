@@ -1,0 +1,13 @@
+// Shared signing defaults. Keep personal overrides in
+// Signing.local.xcconfig, which is intentionally gitignored.
+BETTERBLUE_DEVELOPMENT_TEAM = C2UW47HS8X
+BETTERBLUE_APP_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue
+BETTERBLUE_WIDGET_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.Widget
+BETTERBLUE_WATCH_APP_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp
+BETTERBLUE_WATCH_WIDGET_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp.WatchWidget
+BETTERBLUE_APP_GROUP_IDENTIFIER = group.com.betterblue.shared
+BETTERBLUE_ICLOUD_CONTAINER_IDENTIFIER = iCloud.com.markschmidt.BetterBlue
+
+#include? "Signing.local.xcconfig"
+
+DEVELOPMENT_TEAM = $(BETTERBLUE_DEVELOPMENT_TEAM)

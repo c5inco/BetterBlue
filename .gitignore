@@ -73,3 +73,4 @@ Temporary Items
 secrets.plist
 config.plist
 UserDefaults.plist
+/Configuration/Signing.local.xcconfig
