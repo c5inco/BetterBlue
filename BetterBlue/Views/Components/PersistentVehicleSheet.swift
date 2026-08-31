@@ -68,6 +68,10 @@ struct PersistentVehicleSheet: View {
     @State private var isLockBusy = false
     @State private var isClimateBusy = false
     @State private var isChargingBusy = false
+    // Incremented only after a vehicle command passes its account guard.
+    // SwiftUI owns the command-dispatch haptic; UIKit remains scoped to
+    // the context-menu presentation callback that SwiftUI does not expose.
+    @State private var commandHapticTrigger = 0
     // Live status text from each in-flight action — replaces the
     // section's idle subtitle so the user sees real progress (e.g.
     // "Locking...", "Waiting for vehicle...", "Charge started").
@@ -158,6 +162,7 @@ struct PersistentVehicleSheet: View {
         // the top while expanded.
         .animation(.spring(response: 0.35, dampingFraction: 0.85), value: detent)
         .ignoresSafeArea(.keyboard)
+        .sensoryFeedback(.impact(weight: .medium), trigger: commandHapticTrigger)
         // MFA `.mfaFlow(state:)` modifier is attached at MainView
         // (not here) so the sheet survives MainView's `scenePhase
         // != .active` view-tree swap.
@@ -1031,7 +1036,7 @@ struct PersistentVehicleSheet: View {
     @MainActor
     private func toggleLock(targetLocked: Bool) async {
         guard let account = bbVehicle.account else { return }
-        VehicleControlHaptics.commandDispatched()
+        commandHapticTrigger += 1
         isLockBusy = true
         lockStatusText = targetLocked ? "Locking" : "Unlocking"
         defer {
@@ -1063,7 +1068,7 @@ struct PersistentVehicleSheet: View {
     @MainActor
     private func toggleCharging(start: Bool) async {
         guard let account = bbVehicle.account else { return }
-        VehicleControlHaptics.commandDispatched()
+        commandHapticTrigger += 1
         isChargingBusy = true
         chargingStatusText = start ? "Starting Charge" : "Stopping Charge"
         defer {
@@ -1103,7 +1108,7 @@ struct PersistentVehicleSheet: View {
     @MainActor
     private func toggleClimate(start: Bool, options: ClimateOptions? = nil) async {
         guard let account = bbVehicle.account else { return }
-        VehicleControlHaptics.commandDispatched()
+        commandHapticTrigger += 1
         isClimateBusy = true
         climateStatusText = start ? "Starting Climate" : "Stopping Climate"
         defer {
@@ -1373,6 +1378,7 @@ private struct SectionRow<Trailing: View>: View {
     let subtitle: String
     let menuActions: [VehicleControlMenuAction]
     @ViewBuilder var trailing: () -> Trailing
+    @State private var menuHapticTrigger = 0
 
     var body: some View {
         HStack(alignment: .center, spacing: 12) {
@@ -1410,6 +1416,17 @@ private struct SectionRow<Trailing: View>: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            // The status area is a tap-to-show Menu. A simultaneous tap
+            // gives it the same rigid reveal feedback as the trailing
+            // long-press button without installing another long-press
+            // recognizer that could compete with paging or sheet dragging.
+            .simultaneousGesture(
+                TapGesture().onEnded { menuHapticTrigger += 1 }
+            )
+            .sensoryFeedback(
+                .impact(flexibility: .rigid),
+                trigger: menuHapticTrigger
+            )
             Spacer()
             trailing()
                 .frame(width: 40, height: 40)
@@ -1714,16 +1731,6 @@ private final class HapticContextMenuButton: UIButton {
         parameters.backgroundColor = .clear
         parameters.visiblePath = UIBezierPath(ovalIn: previewView.bounds)
         return UITargetedPreview(view: previewView, parameters: parameters)
-    }
-}
-
-@MainActor
-private enum VehicleControlHaptics {
-    private static let commandFeedback = UIImpactFeedbackGenerator(style: .medium)
-
-    static func commandDispatched() {
-        commandFeedback.impactOccurred()
-        commandFeedback.prepare()
     }
 }
 
