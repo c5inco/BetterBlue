@@ -13,7 +13,9 @@ import Foundation
 enum WidgetCommandStatus {
     // Same app group the shared SwiftData store + AppSettings use, so
     // the value written by the button intent is visible to the widget.
-    private static let suiteName = "group.com.betterblue.shared"
+    private static let suiteName =
+        Bundle.main.object(forInfoDictionaryKey: "BetterBlueAppGroupIdentifier") as? String
+            ?? "group.com.betterblue.shared"
     private static var defaults: UserDefaults? { UserDefaults(suiteName: suiteName) }
     private static func key(_ vin: String) -> String { "widgetCommand.\(vin)" }
 

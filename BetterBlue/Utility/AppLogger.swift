@@ -3,7 +3,7 @@
 //  BetterBlue
 //
 //  Unified logging using OSLog for debugging background processes, intents, and live activities.
-//  View logs in Console.app by filtering for "com.markschmidt.BetterBlue"
+//  View logs in Console.app by filtering for the app's bundle identifier.
 //
 
 import BetterBlueKit
@@ -20,10 +20,10 @@ import OSLog
 /// To view logs:
 ///   1. Open Console.app on Mac
 ///   2. Select your device (connect via cable or same network)
-///   3. Filter by "com.markschmidt.BetterBlue" or category name
+///   3. Filter by the app's bundle identifier or category name
 ///   4. Make sure to enable "Include Info Messages" and "Include Debug Messages" in Action menu
 enum AppLogger {
-    private static let subsystem = "com.markschmidt.BetterBlue"
+    private static let subsystem = Bundle.main.bundleIdentifier ?? "com.markschmidt.BetterBlue"
 
     /// Live Activity related logs
     static let liveActivity = Logger(subsystem: subsystem, category: "LiveActivity")

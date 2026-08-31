@@ -84,6 +84,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		C5C0D00131A0000000000001 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
+		C5C0D00131A0000000000002 /* Signing.local.xcconfig.example */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.local.xcconfig.example; sourceTree = "<group>"; };
 		ED37F0242DFB4E4F00C02398 /* BetterBlue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BetterBlue.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		ED3C6FBD2F1DE24400243322 /* handler.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = handler.js; sourceTree = "<group>"; };
 		ED3C7D402F1DE24400243322 /* package.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = package.json; sourceTree = "<group>"; };
@@ -341,6 +343,7 @@
 		ED37F01B2DFB4E4F00C02398 = {
 			isa = PBXGroup;
 			children = (
+				C5C0D00131A0000000000003 /* Configuration */,
 				ED8110912F08B6DE003BD1FB /* LiveActivityBackend */,
 				ED51C8952E706FCB0072B90D /* LICENSE */,
 				ED51C8962E706FCB0072B90D /* README.md */,
@@ -351,6 +354,15 @@
 				EDC9B1CD2DFC677000C602F4 /* Frameworks */,
 				ED37F0252DFB4E4F00C02398 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		C5C0D00131A0000000000003 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				C5C0D00131A0000000000001 /* Signing.xcconfig */,
+				C5C0D00131A0000000000002 /* Signing.local.xcconfig.example */,
+			);
+			path = Configuration;
 			sourceTree = "<group>";
 		};
 		ED37F0252DFB4E4F00C02398 /* Products */ = {
@@ -622,6 +634,7 @@
 /* Begin XCBuildConfiguration section */
 		ED37F0302DFB4E5100C02398 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C5C0D00131A0000000000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -655,7 +668,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -687,6 +700,7 @@
 		};
 		ED37F0312DFB4E5100C02398 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = C5C0D00131A0000000000001 /* Signing.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -720,7 +734,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -769,7 +783,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -803,7 +817,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 6.0;
@@ -819,19 +833,19 @@
 				CODE_SIGN_ENTITLEMENTS = "BetterBlueWatch Watch App/BetterBlueWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 60;
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "BetterBlueWatch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = BetterBlue;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.markschmidt.BetterBlue;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(BETTERBLUE_APP_BUNDLE_IDENTIFIER)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WATCH_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -854,19 +868,19 @@
 				CODE_SIGN_ENTITLEMENTS = "BetterBlueWatch Watch App/BetterBlueWatch Watch App.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 60;
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "BetterBlueWatch-Watch-App-Info.plist";
 				INFOPLIST_KEY_CFBundleDisplayName = BetterBlue;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
-				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = com.markschmidt.BetterBlue;
+				INFOPLIST_KEY_WKCompanionAppBundleIdentifier = "$(BETTERBLUE_APP_BUNDLE_IDENTIFIER)";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WATCH_APP_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -901,7 +915,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WIDGET_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -933,7 +947,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.Widget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WIDGET_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -953,7 +967,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchWidget/WatchWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 60;
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WatchWidget;
@@ -965,7 +979,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp.WatchWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WATCH_WIDGET_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
@@ -987,7 +1001,7 @@
 				CODE_SIGN_ENTITLEMENTS = WatchWidget/WatchWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 60;
-				DEVELOPMENT_TEAM = C2UW47HS8X;
+				DEVELOPMENT_TEAM = "$(BETTERBLUE_DEVELOPMENT_TEAM)";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = WatchWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = WatchWidget;
@@ -999,7 +1013,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MARKETING_VERSION = 2026.8.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.markschmidt.BetterBlue.watchkitapp.WatchWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(BETTERBLUE_WATCH_WIDGET_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
 				SKIP_INSTALL = YES;
